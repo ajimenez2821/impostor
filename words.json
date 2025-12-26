@@ -1,0 +1,6 @@
+{
+  "Frutas": ["Manzana", "Plátano", "Kiwi", "Mango", "Fresa", "Piña"],
+  "Lugares": ["Hospital", "Escuela", "Playa", "Cine", "Restaurante", "Banco"],
+  "Animales": ["Perro", "Gato", "Elefante", "León", "Pingüino", "Jirafa"],
+  "Profesiones": ["Médico", "Bombero", "Policía", "Profesor", "Programador", "Astronauta"]
+}
