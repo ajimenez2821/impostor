@@ -25,10 +25,10 @@ const avatarColors = [
     'bg-pink-500', 'bg-rose-500'
 ];
 
-// Generador: 4 Números + 1 Letra
+// Generador de códigos: 2 Números + 1 Letra
 function generateRoomCode() {
     let numbers = '';
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 2; i++) {
         numbers += Math.floor(Math.random() * 10).toString();
     }
     const letters = 'QWERYPVCXZSAFGHJK';
@@ -38,6 +38,15 @@ function generateRoomCode() {
 
 function getRandomColor() {
     return avatarColors[Math.floor(Math.random() * avatarColors.length)];
+}
+
+// Normalizar texto
+function normalizeText(text) {
+    return text
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") 
+        .trim();
 }
 
 function finalizePlayerRemoval(socketId, roomCode) {
@@ -55,26 +64,20 @@ function finalizePlayerRemoval(socketId, roomCode) {
             delete rooms[roomCode];
             console.log(`Sala ${roomCode} cerrada definitivamente.`);
         } else {
-            console.log(`Jugador ${removedPlayer.username} salió.`);
+            console.log(`Jugador ${removedPlayer.username} salió de la sala ${roomCode}.`);
         }
     }
 }
 
-// Función auxiliar para normalizar texto (quitar tildes)
-function normalizeText(text) {
-    return text
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // Elimina diacríticos (tildes, diéresis)
-        .trim();
-}
-
 io.on('connection', (socket) => {
-    console.log('Usuario conectado:', socket.id);
-
+    
     // --- CREAR SALA ---
     socket.on('createRoom', ({ username, sessionToken }) => {
         const roomCode = generateRoomCode();
+        
+        // LOG ACTUALIZADO: ID - User - Sala
+        console.log(`Usuario conectado (Crea Sala): ${socket.id} - ${username} - Sala: ${roomCode}`);
+
         rooms[roomCode] = {
             creatorToken: sessionToken,
             players: [{ 
@@ -86,7 +89,7 @@ io.on('connection', (socket) => {
                 sessionToken: sessionToken,
                 isReady: true 
             }],
-            gameState: 'lobby',
+            gameState: 'lobby', 
             settings: { impostorCount: 1, useHint: false },
             currentWord: '',
             currentCategory: '',
@@ -108,6 +111,9 @@ io.on('connection', (socket) => {
         const room = rooms[code];
         
         if (room && room.gameState === 'lobby') {
+            // LOG ACTUALIZADO: ID - User - Sala (CORREGIDO AQUÍ)
+            console.log(`Usuario conectado (Se une): ${socket.id} - ${username} - Sala: ${code}`);
+
             const isOriginalHost = room.creatorToken === sessionToken;
             room.players.push({ 
                 id: socket.id, 
@@ -138,6 +144,10 @@ io.on('connection', (socket) => {
         
         if (playerIndex !== -1) {
             const player = room.players[playerIndex];
+            
+            // LOG ACTUALIZADO: ID - User - Sala
+            console.log(`Usuario conectado (Reconexión): ${socket.id} - ${player.username} - Sala: ${roomCode}`);
+
             const oldSocketId = player.id;
 
             if (pendingDisconnects[oldSocketId]) {
@@ -214,7 +224,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- INICIAR JUEGO ---
     socket.on('startGame', ({ roomCode, impostorCount }) => {
         const room = rooms[roomCode];
         if (!room) return;
@@ -275,7 +284,6 @@ io.on('connection', (socket) => {
         io.to(roomCode).emit('updatePlayerList', room.players);
     });
 
-    // --- VOTACIÓN ---
     socket.on('submitVote', ({ roomCode, votedId }) => {
         const room = rooms[roomCode];
         if (!room) return;
@@ -298,7 +306,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- INTENTO FINAL (LAST CHANCE) ---
     socket.on('impostorFinalGuess', ({ roomCode, word }) => {
         const room = rooms[roomCode];
         if (!room || room.gameState !== 'last_chance') return;
@@ -307,7 +314,6 @@ io.on('connection', (socket) => {
 
         room.impostorGuess = word;
         
-        // MODIFICACIÓN: Comparación sin tildes ni mayúsculas
         const cleanGuess = normalizeText(word);
         const cleanTarget = normalizeText(room.currentWord);
 
@@ -324,7 +330,6 @@ io.on('connection', (socket) => {
         finalizeGame(roomCode, winner, message);
     });
 
-    // --- GESTIÓN DE SALA ---
     socket.on('markReady', ({ roomCode }) => {
         const room = rooms[roomCode];
         if (room) {

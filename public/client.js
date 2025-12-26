@@ -55,9 +55,8 @@ function showScreen(screenName) {
 function showNotification(msg, type = 'error') {
     const area = document.getElementById('notification-area');
     
-    // --- NUEVO: Limpiar notificaciones anteriores para evitar duplicados ---
+    // --- LIMPIEZA DE NOTIFICACIONES ANTERIORES (Evita stacking) ---
     area.innerHTML = ''; 
-    // ---------------------------------------------------------------------
 
     const div = document.createElement('div');
     const bgColor = type === 'error' ? 'bg-red-500/90' : 'bg-emerald-500/90';
@@ -71,7 +70,6 @@ function showNotification(msg, type = 'error') {
         div.style.opacity = '0';
         div.style.transform = 'translateY(-20px)';
         setTimeout(() => {
-            // Verificamos si sigue existiendo antes de borrarlo (por si hicimos el innerHTML = '' antes)
             if(div.parentNode) div.remove();
         }, 500);
     }, 3000);
@@ -104,13 +102,17 @@ document.getElementById('btn-imp-plus').addEventListener('click', () => {
     }
 });
 
-// Validación de Input de Sala
+// Validación de Input de Sala (2 números + 1 letra)
 document.getElementById('room-code-input').addEventListener('input', function(e) {
     let value = e.target.value.toUpperCase();
-    let numbers = value.replace(/[^0-9]/g, '').substring(0, 4);
+    
+    // Solo 2 números
+    let numbers = value.replace(/[^0-9]/g, '').substring(0, 2); 
+    
     let letter = '';
-    if (numbers.length === 4) {
-        const rest = value.substring(4);
+    // Si ya tenemos 2 números, buscamos la letra
+    if (numbers.length === 2) {
+        const rest = value.substring(2);
         letter = rest.replace(/[^A-Z]/g, '').substring(0, 1);
     }
     e.target.value = numbers + letter;
@@ -129,7 +131,9 @@ document.getElementById('btn-join').addEventListener('click', () => {
     const username = document.getElementById('username').value;
     const roomCode = document.getElementById('room-code-input').value;
     if (!username || !roomCode) return showNotification('Faltan datos');
-    if (roomCode.length !== 5) return showNotification('Código incompleto');
+    
+    // CAMBIO: Validación de longitud 3
+    if (roomCode.length !== 3) return showNotification('Código incompleto');
     
     myUsername = username;
     socket.emit('joinRoom', { username, roomCode, sessionToken });
@@ -297,7 +301,6 @@ function updatePlayerListUI(players) {
 
         let kickButton = '';
         if (me && me.isHost && !isMe) {
-            // Se añade clase 'btn-kick' y data-id, y data-name
             kickButton = `
                 <button class="btn-kick ml-2 w-8 h-8 rounded-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/30 transition flex items-center justify-center" 
                     data-id="${p.id}" 
@@ -330,7 +333,7 @@ function updatePlayerListUI(players) {
         impDisplay.innerText = localImpostorCount;
     }
 
-    // Listener para botones de expulsión (abre modal)
+    // Listener para botones de expulsión
     document.querySelectorAll('.btn-kick').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
