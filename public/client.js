@@ -13,14 +13,21 @@ const screens = {
     lobby: document.getElementById('screen-lobby'),
     game: document.getElementById('screen-game'),
     voting: document.getElementById('screen-voting'),
-    lastChance: document.getElementById('screen-last-chance'), // NUEVA PANTALLA
+    lastChance: document.getElementById('screen-last-chance'),
     results: document.getElementById('screen-results')
 };
+
+// Variables para el Modal de Votación
+const voteModal = document.getElementById('vote-modal');
+const modalVoteName = document.getElementById('modal-vote-name');
+let pendingVoteId = null;
 
 let myUsername = '';
 let currentRoom = '';
 let currentPlayers = [];
 let localImpostorCount = 1;
+
+// --- FUNCIONES UTILITARIAS ---
 
 function saveSession(roomCode, username) {
     localStorage.setItem('impostor_room', roomCode);
@@ -56,6 +63,8 @@ function showNotification(msg, type = 'error') {
     }, 3000);
 }
 
+// --- INTERACCIÓN DOM BÁSICA ---
+
 const cardInner = document.getElementById('card-inner');
 document.getElementById('card-container').addEventListener('click', () => {
     cardInner.classList.toggle('is-flipped');
@@ -80,6 +89,8 @@ document.getElementById('btn-imp-plus').addEventListener('click', () => {
         else showNotification("Máximo alcanzado");
     }
 });
+
+// --- LÓGICA DE SOCKETS Y BOTONES ---
 
 document.getElementById('btn-create').addEventListener('click', () => {
     const username = document.getElementById('username').value;
@@ -110,6 +121,7 @@ document.getElementById('btn-leave-lobby').addEventListener('click', () => {
     showScreen('home');
 });
 
+// Al conectar, intentar reconectar sesión previa
 socket.on('connect', () => {
     const savedRoom = localStorage.getItem('impostor_room');
     const savedUser = localStorage.getItem('impostor_user');
@@ -133,11 +145,15 @@ socket.on('roomJoined', ({ roomCode }) => {
     showScreen('lobby');
 });
 
+// --- RECONEXIÓN EXITOSA ---
 socket.on('reconnectSuccess', (data) => {
     currentRoom = data.roomCode;
     myUsername = data.username;
     document.getElementById('lobby-code').innerText = currentRoom;
     saveSession(currentRoom, myUsername);
+
+    currentPlayers = data.players; 
+    updatePlayerListUI(data.players);
 
     if (data.gameState === 'lobby') {
         if (!data.isReady && data.lastGameResults) {
@@ -145,10 +161,61 @@ socket.on('reconnectSuccess', (data) => {
         } else {
             showScreen('lobby');
         }
-    } else if (data.gameState === 'playing') {
+    } 
+    else if (data.gameState === 'playing') {
         handleGameStarted(data.gameData);
     } 
-    updatePlayerListUI(data.players);
+    else if (data.gameState === 'voting') {
+        // --- RECUPERAR ESTADO DE VOTACIÓN ---
+        
+        // 1. Restaurar visualmente el rol en la carta (aunque esté oculta)
+        if (data.gameData) {
+            const secretWordEl = document.getElementById('secret-word');
+            const roleTitle = document.getElementById('role-title');
+            if (data.gameData.role === 'impostor') {
+                roleTitle.innerText = 'ERES EL IMPOSTOR';
+                secretWordEl.innerText = "🕵️";
+            } else {
+                roleTitle.innerText = 'CIVIL';
+                secretWordEl.innerText = data.gameData.word;
+            }
+        }
+
+        // 2. Mostrar pantalla de votación directamente
+        showScreen('voting');
+        generateVotingButtons();
+
+        // 3. Si ya votó, bloquear la UI
+        if (data.hasVoted) {
+            const container = document.getElementById('voting-list');
+            Array.from(container.children).forEach(b => {
+                b.disabled = true;
+                b.classList.add('opacity-50', 'grayscale');
+                b.classList.remove('border-red-500/50', 'bg-red-500/10');
+            });
+            document.getElementById('vote-status').innerText = "Ya has votado. Esperando al resto...";
+        }
+
+    } 
+    else if (data.gameState === 'last_chance') {
+        // --- RECUPERAR ESTADO LAST CHANCE ---
+        const caughtPlayer = data.players.find(p => p.id === data.caughtImpostorId);
+        showScreen('lastChance');
+        
+        const waitingView = document.getElementById('lc-waiting-view');
+        const impostorView = document.getElementById('lc-impostor-view');
+        const nameDisplay = document.getElementById('lc-impostor-name');
+        
+        if (data.caughtImpostorId === socket.id) {
+            waitingView.classList.add('hidden');
+            impostorView.classList.remove('hidden');
+        } else {
+            impostorView.classList.add('hidden');
+            waitingView.classList.remove('hidden');
+            nameDisplay.innerText = caughtPlayer ? caughtPlayer.username : 'Impostor';
+        }
+    }
+    
     showNotification("¡Sesión recuperada!", "success");
 });
 
@@ -327,7 +394,7 @@ socket.on('startLastChance', ({ impostorName, isYou }) => {
         guessInput.value = "";
         guessInput.focus();
     } else {
-        // Eres civil o otro impostor (si hay varios)
+        // Eres civil o otro impostor
         impostorView.classList.add('hidden');
         waitingView.classList.remove('hidden');
         nameDisplay.innerText = impostorName;
@@ -343,10 +410,39 @@ document.getElementById('btn-lc-submit').addEventListener('click', () => {
     }
 });
 
+// --- VOTACIÓN Y MODAL ---
 
 document.getElementById('btn-goto-vote').addEventListener('click', () => {
     showScreen('voting');
     generateVotingButtons(); 
+});
+
+// Cancelar modal
+document.getElementById('btn-cancel-vote').addEventListener('click', () => {
+    voteModal.classList.add('hidden');
+    pendingVoteId = null;
+    
+    document.querySelectorAll('#voting-list button').forEach(b => {
+        b.classList.remove('border-red-500/50', 'bg-red-500/10');
+    });
+});
+
+// Confirmar modal
+document.getElementById('btn-confirm-vote').addEventListener('click', () => {
+    if (pendingVoteId) {
+        socket.emit('submitVote', { roomCode: currentRoom, votedId: pendingVoteId });
+        document.getElementById('vote-status').innerText = `Voto enviado. Esperando al resto...`;
+        
+        const container = document.getElementById('voting-list');
+        Array.from(container.children).forEach(b => {
+            b.disabled = true;
+            b.classList.add('opacity-50', 'grayscale');
+            b.classList.remove('border-red-500/50', 'bg-red-500/10');
+        });
+        
+        voteModal.classList.add('hidden');
+        pendingVoteId = null;
+    }
 });
 
 function generateVotingButtons() {
@@ -357,33 +453,31 @@ function generateVotingButtons() {
         if (p.sessionToken === sessionToken) return; 
 
         const btn = document.createElement('button');
-        btn.className = 'w-full glass-panel p-4 rounded-2xl flex items-center space-x-4 hover:bg-white/10 transition group border-transparent hover:border-white/20';
+        // Estilo compacto
+        btn.className = 'w-full glass-panel p-3 rounded-xl flex items-center space-x-3 hover:bg-white/10 transition group border border-transparent hover:border-white/10 active:scale-[0.98]';
         
         const initial = p.username.charAt(0).toUpperCase();
         
         btn.innerHTML = `
-            <div class="w-12 h-12 rounded-xl bg-gray-700 flex items-center justify-center text-white font-bold text-lg shadow-inner group-hover:scale-110 transition">
+            <div class="w-10 h-10 rounded-lg bg-gray-700/50 flex items-center justify-center text-white font-bold text-base shadow-inner shrink-0">
                 ${initial}
             </div>
-            <div class="text-left flex-1">
-                <span class="block font-bold text-white text-lg group-hover:text-purple-300 transition">${p.username}</span>
-                <span class="text-xs text-gray-500 uppercase tracking-widest">Sospechoso</span>
+            <div class="text-left flex-1 min-w-0">
+                <span class="block font-bold text-white text-base truncate leading-tight">${p.username}</span>
+                <span class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Sospechoso</span>
             </div>
-            <div class="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-red-400">
+            <div class="w-6 h-6 rounded-full border border-white/10 flex items-center justify-center text-gray-600 group-hover:text-red-400 group-hover:border-red-400/30 transition">
                 ⚡
             </div>
         `;
 
         btn.onclick = () => {
-            Array.from(container.children).forEach(b => {
-                b.disabled = true;
-                b.classList.add('opacity-50', 'grayscale');
-            });
-            btn.classList.remove('opacity-50', 'grayscale');
-            btn.classList.add('border-red-500/50', 'bg-red-500/10');
+            pendingVoteId = p.id;
+            modalVoteName.innerText = p.username;
+            voteModal.classList.remove('hidden');
             
-            socket.emit('submitVote', { roomCode: currentRoom, votedId: p.id });
-            document.getElementById('vote-status').innerText = `Has votado a ${p.username}.`;
+            Array.from(container.children).forEach(b => b.classList.remove('border-red-500/50', 'bg-red-500/10'));
+            btn.classList.add('border-red-500/50', 'bg-red-500/10');
         };
         container.appendChild(btn);
     });
@@ -426,10 +520,12 @@ document.getElementById('btn-restart').addEventListener('click', () => {
     cardInner.classList.remove('is-flipped');
     document.getElementById('secret-word').innerText = "...";
     document.getElementById('role-title').innerText = "ROL";
-    // Limpieza de estados anteriores
+    
+    // Limpieza
     document.getElementById('lc-guess-input').value = "";
     document.getElementById('vote-status').innerText = "Esperando votos...";
     document.getElementById('voting-list').innerHTML = "";
+    voteModal.classList.add('hidden');
 });
 
 socket.on('navigateToLobby', () => {});

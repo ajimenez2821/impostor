@@ -10,7 +10,10 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Cargar palabras
 const wordsData = JSON.parse(fs.readFileSync('./words.json', 'utf8'));
+
+// Estado en memoria
 const rooms = {};
 const pendingDisconnects = {}; 
 
@@ -48,9 +51,11 @@ function finalizePlayerRemoval(socketId, roomCode) {
         
         if (room.players.length === 0) {
             delete rooms[roomCode];
-            console.log(`Sala ${roomCode} cerrada definitivamente (está vacía).`);
+            console.log(`Sala ${roomCode} cerrada definitivamente.`);
         } else {
-            console.log(`Jugador ${removedPlayer.username} salió. La sala ${roomCode} permanece abierta.`);
+            // Si el juego estaba en curso y se va alguien, podría romperse la lógica, 
+            // pero para simplificar, dejamos que siga o que el host reinicie.
+            console.log(`Jugador ${removedPlayer.username} salió.`);
         }
     }
 }
@@ -58,7 +63,7 @@ function finalizePlayerRemoval(socketId, roomCode) {
 io.on('connection', (socket) => {
     console.log('Usuario conectado:', socket.id);
 
-    // Crear Sala
+    // --- CREAR SALA ---
     socket.on('createRoom', ({ username, sessionToken }) => {
         const roomCode = generateRoomCode();
         rooms[roomCode] = {
@@ -72,14 +77,14 @@ io.on('connection', (socket) => {
                 sessionToken: sessionToken,
                 isReady: true 
             }],
-            gameState: 'lobby', // Estados: lobby, playing, last_chance
+            gameState: 'lobby', // lobby, playing, voting, last_chance
             settings: { impostorCount: 1, useHint: false },
             currentWord: '',
             currentCategory: '',
             impostorIds: [],
             votes: {},
             impostorGuess: null,
-            caughtImpostorId: null, // Guardar quien fue pillado para la fase final
+            caughtImpostorId: null,
             lastGameResults: null 
         };
 
@@ -88,7 +93,7 @@ io.on('connection', (socket) => {
         io.to(roomCode).emit('updatePlayerList', rooms[roomCode].players);
     });
 
-    // Unirse a Sala
+    // --- UNIRSE A SALA ---
     socket.on('joinRoom', ({ username, roomCode, sessionToken }) => {
         const room = rooms[roomCode.toUpperCase()];
         if (room && room.gameState === 'lobby') {
@@ -110,7 +115,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Reconexión
+    // --- RECONEXIÓN (BUG FIX) ---
     socket.on('attemptReconnect', ({ roomCode, sessionToken }) => {
         const room = rooms[roomCode];
         if (!room) {
@@ -124,25 +129,35 @@ io.on('connection', (socket) => {
             const player = room.players[playerIndex];
             const oldSocketId = player.id;
 
+            // Cancelar borrado pendiente si existe
             if (pendingDisconnects[oldSocketId]) {
                 clearTimeout(pendingDisconnects[oldSocketId].timeout);
                 delete pendingDisconnects[oldSocketId];
             }
 
+            // Actualizar ID de socket
             player.id = socket.id;
             socket.join(roomCode);
 
-            // Actualizar IDs de impostor si cambiaron por reconexión
+            // Actualizar referencias internas de IDs (Impostores, Votos, Pillados)
             if (room.impostorIds.includes(oldSocketId)) {
                 room.impostorIds = room.impostorIds.map(id => id === oldSocketId ? socket.id : id);
             }
             if (room.caughtImpostorId === oldSocketId) {
                 room.caughtImpostorId = socket.id;
             }
+            // Si ya había votado con el socket viejo, migrar el voto al socket nuevo
+            if (room.votes[oldSocketId]) {
+                room.votes[socket.id] = room.votes[oldSocketId];
+                delete room.votes[oldSocketId];
+            }
 
+            // Preparar datos del juego para reenviar
             let gameData = null;
-            if (room.gameState === 'playing') {
-                const isImpostor = room.impostorIds.includes(player.id);
+            const isImpostor = room.impostorIds.includes(player.id);
+            
+            // Enviamos datos de rol si estamos jugando O votando
+            if (room.gameState === 'playing' || room.gameState === 'voting') {
                 const showHint = isImpostor && room.settings.useHint;
                 gameData = {
                     role: isImpostor ? 'impostor' : 'civilian',
@@ -151,14 +166,7 @@ io.on('connection', (socket) => {
                 if (showHint) gameData.hint = `Categoría: ${room.currentCategory}`;
             }
 
-            // Si se reconecta durante la fase final "Last Chance"
-            if (room.gameState === 'last_chance') {
-                const caughtPlayer = room.players.find(p => p.id === room.caughtImpostorId);
-                socket.emit('startLastChance', {
-                    impostorName: caughtPlayer ? caughtPlayer.username : 'Impostor',
-                    isYou: room.caughtImpostorId === socket.id
-                });
-            }
+            const hasVoted = !!room.votes[socket.id];
 
             socket.emit('reconnectSuccess', {
                 roomCode,
@@ -166,9 +174,28 @@ io.on('connection', (socket) => {
                 players: room.players,
                 gameState: room.gameState,
                 gameData,
+                hasVoted: hasVoted,      // Flag importante para el cliente
                 lastGameResults: room.lastGameResults,
-                isReady: player.isReady
+                isReady: player.isReady,
+                caughtImpostorId: room.caughtImpostorId
             });
+
+            // Si estamos en votación, actualizamos contadores para el reconectado
+            if (room.gameState === 'voting') {
+                 socket.emit('voteUpdate', { 
+                    votesCount: Object.keys(room.votes).length, 
+                    totalPlayers: room.players.length 
+                });
+            }
+
+            // Si estamos en last_chance, actualizar vista
+            if (room.gameState === 'last_chance') {
+                const caughtPlayer = room.players.find(p => p.id === room.caughtImpostorId);
+                socket.emit('startLastChance', {
+                    impostorName: caughtPlayer ? caughtPlayer.username : 'Impostor',
+                    isYou: room.caughtImpostorId === socket.id
+                });
+            }
 
             io.to(roomCode).emit('updatePlayerList', room.players);
 
@@ -184,6 +211,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- INICIAR JUEGO ---
     socket.on('startGame', ({ roomCode, impostorCount }) => {
         const room = rooms[roomCode];
         if (!room) return;
@@ -195,26 +223,30 @@ io.on('connection', (socket) => {
 
         const allReady = room.players.every(p => p.isReady);
         if (!allReady) {
-            socket.emit('error', 'Todos los jugadores deben volver al lobby.');
+            socket.emit('error', 'Todos los jugadores deben estar listos (✓).');
             return;
         }
 
         let validImpostors = impostorCount || room.settings.impostorCount;
         if (validImpostors >= room.players.length) validImpostors = 1;
         room.settings.impostorCount = validImpostors;
+        
+        // Reset de variables de juego
         room.votes = {};
         room.impostorGuess = null;
         room.caughtImpostorId = null;
         room.lastGameResults = null;
-        room.gameState = 'playing';
+        room.gameState = 'playing'; // ESTADO: JUGANDO
 
         room.players.forEach(p => p.isReady = false);
 
+        // Selección de palabra
         const randomCat = wordsData[Math.floor(Math.random() * wordsData.length)];
         const randomWord = randomCat.words[Math.floor(Math.random() * randomCat.words.length)];
         room.currentCategory = randomCat.category;
         room.currentWord = randomWord;
 
+        // Selección de impostores
         const playerIds = room.players.map(p => p.id);
         const impostors = [];
         while (impostors.length < room.settings.impostorCount && impostors.length < playerIds.length) {
@@ -224,6 +256,7 @@ io.on('connection', (socket) => {
         }
         room.impostorIds = impostors;
 
+        // Enviar roles
         room.players.forEach(player => {
             const isImpostor = impostors.includes(player.id);
             const showHint = isImpostor && room.settings.useHint;
@@ -243,12 +276,22 @@ io.on('connection', (socket) => {
         io.to(roomCode).emit('updatePlayerList', room.players);
     });
 
+    // --- VOTACIÓN ---
     socket.on('submitVote', ({ roomCode, votedId }) => {
         const room = rooms[roomCode];
         if (!room) return;
+
+        // Si llega el primer voto, cambiamos estado global a VOTING
+        if (room.gameState === 'playing') {
+            room.gameState = 'voting';
+        }
+
+        // Evitar doble voto
+        if (room.votes[socket.id]) return;
+
         room.votes[socket.id] = votedId;
         
-        // Si todos han votado (menos el que está votando si es el último en llegar, la lógica funciona igual al llegar al length)
+        // Comprobar si todos han votado
         if (Object.keys(room.votes).length === room.players.length) {
             processVotingResults(roomCode);
         } else {
@@ -259,12 +302,12 @@ io.on('connection', (socket) => {
         }
     });
 
-    // NUEVO: Manejador para el intento final del impostor
+    // --- INTENTO FINAL (LAST CHANCE) ---
     socket.on('impostorFinalGuess', ({ roomCode, word }) => {
         const room = rooms[roomCode];
         if (!room || room.gameState !== 'last_chance') return;
         
-        // Verificar que quien envía es el impostor atrapado
+        // Solo el impostor atrapado puede enviar esto
         if (socket.id !== room.caughtImpostorId) return;
 
         room.impostorGuess = word;
@@ -282,6 +325,7 @@ io.on('connection', (socket) => {
         finalizeGame(roomCode, winner, message);
     });
 
+    // --- GESTIÓN DE SALA ---
     socket.on('markReady', ({ roomCode }) => {
         const room = rooms[roomCode];
         if (room) {
@@ -299,7 +343,7 @@ io.on('connection', (socket) => {
 
         const requester = room.players.find(p => p.id === socket.id);
         if (!requester || !requester.isHost) return;
-        if (requester.id === playerId) return;
+        if (requester.id === playerId) return; // No auto-kick
 
         const targetIndex = room.players.findIndex(p => p.id === playerId);
         if (targetIndex !== -1) {
@@ -340,6 +384,7 @@ io.on('connection', (socket) => {
         }
 
         if (foundRoomCode) {
+            // Dar 15 segundos para reconectar
             const timeout = setTimeout(() => {
                 finalizePlayerRemoval(socket.id, foundRoomCode);
                 delete pendingDisconnects[socket.id];
@@ -361,13 +406,11 @@ function processVotingResults(roomCode) {
     let maxVotes = 0;
     let mostVotedId = null;
     
-    // Determinar quién tiene más votos
     for (const [id, count] of Object.entries(voteCounts)) {
         if (count > maxVotes) { maxVotes = count; mostVotedId = id; }
     }
 
-    // Comprobar si hay empate (opcional, aquí simplificamos: el primero con maxVotes gana)
-    // En Spyfall real, si hay empate no se echa a nadie, pero para fluidez del juego online:
+    // Lógica simple de empate: gana el primero encontrado (se puede mejorar)
     
     const isImpostor = room.impostorIds.includes(mostVotedId);
 
@@ -377,7 +420,7 @@ function processVotingResults(roomCode) {
         room.caughtImpostorId = mostVotedId;
         const caughtPlayer = room.players.find(p => p.id === mostVotedId);
 
-        // Notificar a todos que empieza la fase final
+        // Notificar inicio Last Chance
         room.players.forEach(p => {
             io.to(p.id).emit('startLastChance', {
                 impostorName: caughtPlayer ? caughtPlayer.username : 'Desconocido',

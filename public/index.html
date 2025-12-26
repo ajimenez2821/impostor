@@ -2,171 +2,196 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <title>Impostor PRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="text-white h-screen flex flex-col items-center justify-center p-4 selection:bg-purple-500 selection:text-white">
+<body class="text-white h-[100dvh] w-full overflow-hidden overscroll-none flex flex-col items-center justify-center p-4 selection:bg-purple-500 selection:text-white relative">
 
-    <div id="screen-home" class="w-full max-w-md flex flex-col items-center space-y-8 animate-enter z-10">
-        <div class="text-center space-y-2">
-            <h1 class="text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-purple-200 to-purple-400 drop-shadow-lg">
-                IMPOSTOR
-            </h1>
-            <p class="text-gray-400 font-light tracking-widest text-sm uppercase">Edición Cristal</p>
-        </div>
+    <div class="fixed-background"></div>
 
-        <div class="glass-panel w-full p-8 rounded-3xl space-y-6">
-            <input type="text" id="username" placeholder="Tu Alias" class="glass-input w-full p-4 rounded-2xl text-center text-lg font-bold placeholder-gray-500 focus:outline-none">
-            
-            <div class="grid grid-cols-2 gap-4">
-                <button id="btn-create" class="p-4 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl font-bold hover:shadow-lg hover:shadow-purple-500/30 transition transform active:scale-95 border border-white/10">
-                    Crear Sala
-                </button>
-                <div class="relative">
-                    <input type="text" id="room-code-input" placeholder="CÓDIGO" class="glass-input w-full p-4 rounded-2xl text-center font-mono uppercase tracking-widest font-bold">
-                </div>
+    <div class="relative z-10 w-full max-w-md flex flex-col items-center justify-center h-full">
+
+        <div id="screen-home" class="w-full flex flex-col items-center space-y-8 animate-enter">
+            <div class="text-center space-y-2">
+                <h1 class="text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-purple-200 to-purple-400 drop-shadow-lg">
+                    IMPOSTOR
+                </h1>
+                <p class="text-gray-400 font-light tracking-widest text-sm uppercase">Edición Cristal</p>
             </div>
-            <button id="btn-join" class="w-full p-4 bg-white/5 border border-white/10 hover:bg-white/10 rounded-2xl font-bold text-gray-300 hover:text-white transition">
-                Unirse a Partida
-            </button>
-        </div>
-    </div>
 
-    <div id="screen-lobby" class="hidden w-full max-w-md flex flex-col h-[85vh] z-10">
-        <div class="glass-panel p-6 rounded-3xl text-center mb-4 relative overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10"></div>
-            <p class="text-gray-400 text-xs font-bold tracking-widest uppercase mb-1">CÓDIGO DE ACCESO</p>
-            <h2 id="lobby-code" class="text-6xl font-black font-mono text-white tracking-wider drop-shadow-xl select-all">----</h2>
-        </div>
-
-        <div class="glass-panel flex-1 p-4 rounded-3xl mb-4 flex flex-col">
-            <div class="flex justify-between items-end mb-4 px-2">
-                <h3 class="text-gray-400 text-xs font-bold tracking-widest uppercase">JUGADORES</h3>
-                <span id="player-count" class="text-xs bg-white/10 px-2 py-1 rounded-full">0/0</span>
-            </div>
-            <ul id="player-list" class="space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar"></ul>
-        </div>
-
-        <div id="host-controls" class="hidden glass-panel p-5 rounded-3xl space-y-4 border-t border-white/10">
-            <div class="flex items-center justify-between">
-                <span class="text-gray-300 font-bold text-sm">Impostores</span>
-                <div class="flex items-center bg-black/30 rounded-xl p-1">
-                    <button id="btn-imp-minus" class="w-8 h-8 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition font-bold">-</button>
-                    <span id="imp-count-display" class="w-8 text-center font-mono font-bold">1</span>
-                    <button id="btn-imp-plus" class="w-8 h-8 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition font-bold">+</button>
-                </div>
-            </div>
-            
-            <label class="flex items-center justify-between cursor-pointer group">
-                <span class="text-gray-300 font-bold text-sm group-hover:text-white transition">Habilitar Pistas</span>
-                <input type="checkbox" id="setting-hint" class="w-5 h-5 accent-purple-500 rounded bg-white/10 border-none cursor-pointer">
-            </label>
-            
-            <button id="btn-start" class="w-full p-4 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl font-bold shadow-lg shadow-emerald-900/40 hover:brightness-110 transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                INICIAR PARTIDA
-            </button>
-        </div>
-        
-        <p id="waiting-msg" class="text-center text-gray-500 text-sm animate-pulse mt-4">Esperando al anfitrión...</p>
-
-        <button id="btn-leave-lobby" class="mt-4 w-full p-3 rounded-2xl text-red-400/70 hover:text-red-300 hover:bg-red-500/10 text-sm font-bold transition border border-transparent hover:border-red-500/20">
-            Abandonar Sala
-        </button>
-    </div>
-
-    <div id="screen-game" class="hidden w-full max-w-md flex flex-col items-center h-full justify-center z-10 animate-enter">
-        <div id="card-container" class="w-full aspect-[3/4] max-h-[500px] perspective-1000 cursor-pointer mb-8 group">
-            <div id="card-inner">
-                <div class="card-face card-front">
-                    <div class="w-32 h-32 bg-purple-500/20 rounded-full flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(168,85,247,0.2)]">
-                        <span class="text-7xl">🕵️</span>
+            <div class="glass-panel w-full p-8 rounded-3xl space-y-6">
+                <input type="text" id="username" placeholder="Tu Alias" class="glass-input w-full p-4 rounded-2xl text-center text-lg font-bold placeholder-gray-500 focus:outline-none">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <button id="btn-create" class="p-4 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl font-bold hover:shadow-lg hover:shadow-purple-500/30 transition transform active:scale-95 border border-white/10">
+                        Crear Sala
+                    </button>
+                    <div class="relative">
+                        <input type="text" id="room-code-input" placeholder="CÓDIGO" class="glass-input w-full p-4 rounded-2xl text-center font-mono uppercase tracking-widest font-bold">
                     </div>
-                    <h2 class="text-3xl font-bold text-white mb-2">Tu Identidad</h2>
-                    <p class="text-gray-400 text-sm uppercase tracking-widest">Toca para revelar</p>
                 </div>
-                <div class="card-face card-back">
-                    <div class="absolute inset-0 bg-gradient-to-b from-purple-900/40 to-transparent pointer-events-none"></div>
-                    <p id="role-title" class="text-sm font-black uppercase tracking-[0.2em] mb-4 text-purple-400 z-10">ROL</p>
-                    <h1 id="secret-word" class="text-5xl font-black text-white mb-6 text-center z-10 leading-tight">...</h1>
-                    <p id="category-hint" class="hidden text-xs font-bold bg-white/10 px-4 py-2 rounded-full text-purple-200 z-10 border border-white/5">...</p>
-                </div>
-            </div>
-        </div>
-
-        <button id="btn-goto-vote" class="w-full p-4 bg-blue-600 rounded-2xl font-bold shadow-lg shadow-blue-900/50 hover:bg-blue-500 transition transform active:scale-95">
-            IR A VOTACIÓN
-        </button>
-    </div>
-
-    <div id="screen-voting" class="hidden w-full max-w-md flex flex-col h-[80vh] z-10 animate-enter">
-        <h2 class="text-3xl font-black text-center mb-1 text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">¿QUIÉN ES?</h2>
-        <p class="text-center text-gray-400 text-sm mb-6">Selecciona al sospechoso</p>
-        
-        <div id="voting-list" class="grid grid-cols-1 gap-3 overflow-y-auto custom-scrollbar pb-4"></div>
-        
-        <div class="mt-auto pt-4 border-t border-white/10 text-center">
-            <p id="vote-status" class="text-sm font-mono text-purple-300 animate-pulse">Esperando votos...</p>
-        </div>
-    </div>
-
-    <div id="screen-last-chance" class="hidden w-full max-w-md flex flex-col items-center justify-center z-10 animate-enter p-4">
-        
-        <div class="mb-8 relative">
-            <div class="absolute inset-0 bg-red-500/20 blur-[50px] rounded-full animate-pulse"></div>
-            <span class="text-8xl relative z-10">🚨</span>
-        </div>
-
-        <h2 class="text-3xl font-black text-center mb-2 uppercase text-red-400">¡Impostor Detectado!</h2>
-        
-        <div id="lc-waiting-view" class="hidden text-center space-y-4">
-            <p class="text-xl font-bold text-white">Es <span id="lc-impostor-name" class="text-yellow-400 text-2xl uppercase">...</span></p>
-            <p class="text-gray-400 text-sm">Tiene una última oportunidad para ganar adivinando la palabra.</p>
-            <div class="w-12 h-12 border-4 border-t-red-500 border-white/10 rounded-full animate-spin mx-auto mt-6"></div>
-        </div>
-
-        <div id="lc-impostor-view" class="hidden w-full space-y-6">
-            <p class="text-center text-gray-300">¡Te han atrapado! Adivina la palabra secreta para robar la victoria.</p>
-            
-            <div class="glass-panel p-6 rounded-3xl space-y-4">
-                <input type="text" id="lc-guess-input" placeholder="Palabra Secreta" class="glass-input w-full p-4 rounded-xl text-center text-xl font-bold border-red-500/30 focus:border-red-500">
-                <button id="btn-lc-submit" class="w-full p-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl font-bold text-white shadow-lg hover:scale-105 transition">
-                    INTENTO FINAL
+                <button id="btn-join" class="w-full p-4 bg-white/5 border border-white/10 hover:bg-white/10 rounded-2xl font-bold text-gray-300 hover:text-white transition">
+                    Unirse a Partida
                 </button>
             </div>
         </div>
-    </div>
 
-    <div id="screen-results" class="hidden w-full max-w-md text-center space-y-8 z-10 animate-enter">
-        <div class="relative inline-block">
-            <div class="absolute inset-0 bg-yellow-500/20 blur-[60px] rounded-full"></div>
-            <div id="result-icon" class="text-9xl relative z-10 animate-bounce">🏆</div>
-        </div>
-        
-        <div>
-            <h2 id="result-title" class="text-4xl font-black mb-2 uppercase tracking-tight">GANADOR</h2>
-            <p id="result-message" class="text-gray-300 text-lg font-light">Detalles...</p>
-        </div>
-        
-        <div class="glass-panel p-6 rounded-3xl text-left space-y-4">
-            <div class="flex justify-between items-center border-b border-white/10 pb-2">
-                <span class="text-gray-400 text-xs uppercase tracking-wider">Palabra Secreta</span>
-                <span id="res-real-word" class="font-bold text-green-400 text-lg">...</span>
+        <div id="screen-lobby" class="hidden w-full flex flex-col h-full max-h-[85dvh]">
+            <div class="glass-panel p-6 rounded-3xl text-center mb-4 relative overflow-hidden shrink-0">
+                <div class="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10"></div>
+                <p class="text-gray-400 text-xs font-bold tracking-widest uppercase mb-1">CÓDIGO DE ACCESO</p>
+                <h2 id="lobby-code" class="text-6xl font-black font-mono text-white tracking-wider drop-shadow-xl select-all">----</h2>
             </div>
-            <div class="flex justify-between items-center border-b border-white/10 pb-2">
-                <span class="text-gray-400 text-xs uppercase tracking-wider">Impostor</span>
-                <span id="res-impostor-name" class="font-bold text-red-400 text-lg">...</span>
+
+            <div class="glass-panel flex-1 p-4 rounded-3xl mb-4 flex flex-col min-h-0">
+                <div class="flex justify-between items-end mb-4 px-2 shrink-0">
+                    <h3 class="text-gray-400 text-xs font-bold tracking-widest uppercase">JUGADORES</h3>
+                    <span id="player-count" class="text-xs bg-white/10 px-2 py-1 rounded-full">0/0</span>
+                </div>
+                <ul id="player-list" class="space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar"></ul>
             </div>
-            <div class="flex justify-between items-center">
-                <span class="text-gray-400 text-xs uppercase tracking-wider">Intento</span>
-                <span id="res-impostor-guess" class="font-bold text-yellow-400">...</span>
+
+            <div id="host-controls" class="hidden glass-panel p-5 rounded-3xl space-y-4 border-t border-white/10 shrink-0">
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-300 font-bold text-sm">Impostores</span>
+                    <div class="flex items-center bg-black/30 rounded-xl p-1">
+                        <button id="btn-imp-minus" class="w-8 h-8 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition font-bold">-</button>
+                        <span id="imp-count-display" class="w-8 text-center font-mono font-bold">1</span>
+                        <button id="btn-imp-plus" class="w-8 h-8 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition font-bold">+</button>
+                    </div>
+                </div>
+                
+                <label class="flex items-center justify-between cursor-pointer group">
+                    <span class="text-gray-300 font-bold text-sm group-hover:text-white transition">Habilitar Pistas</span>
+                    <input type="checkbox" id="setting-hint" class="w-5 h-5 accent-purple-500 rounded bg-white/10 border-none cursor-pointer">
+                </label>
+                
+                <button id="btn-start" class="w-full p-4 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl font-bold shadow-lg shadow-emerald-900/40 hover:brightness-110 transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    INICIAR PARTIDA
+                </button>
+            </div>
+            
+            <p id="waiting-msg" class="text-center text-gray-500 text-sm animate-pulse mt-4 shrink-0">Esperando al anfitrión...</p>
+
+            <button id="btn-leave-lobby" class="mt-4 w-full p-3 rounded-2xl text-red-400/70 hover:text-red-300 hover:bg-red-500/10 text-sm font-bold transition border border-transparent hover:border-red-500/20 shrink-0">
+                Abandonar Sala
+            </button>
+        </div>
+
+        <div id="screen-game" class="hidden w-full flex flex-col items-center h-full justify-center">
+            <div id="card-container" class="w-full aspect-[3/4] max-h-[500px] perspective-1000 cursor-pointer mb-8 group">
+                <div id="card-inner">
+                    <div class="card-face card-front">
+                        <div class="w-32 h-32 bg-purple-500/20 rounded-full flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(168,85,247,0.2)]">
+                            <span class="text-7xl">🕵️</span>
+                        </div>
+                        <h2 class="text-3xl font-bold text-white mb-2">Tu Identidad</h2>
+                        <p class="text-gray-400 text-sm uppercase tracking-widest">Toca para revelar</p>
+                    </div>
+                    <div class="card-face card-back">
+                        <div class="absolute inset-0 bg-gradient-to-b from-purple-900/40 to-transparent pointer-events-none"></div>
+                        <p id="role-title" class="text-sm font-black uppercase tracking-[0.2em] mb-4 text-purple-400 z-10">ROL</p>
+                        <h1 id="secret-word" class="text-5xl font-black text-white mb-6 text-center z-10 leading-tight">...</h1>
+                        <p id="category-hint" class="hidden text-xs font-bold bg-white/10 px-4 py-2 rounded-full text-purple-200 z-10 border border-white/5">...</p>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-goto-vote" class="w-full p-4 bg-blue-600 rounded-2xl font-bold shadow-lg shadow-blue-900/50 hover:bg-blue-500 transition transform active:scale-95">
+                IR A VOTACIÓN
+            </button>
+        </div>
+
+        <div id="screen-voting" class="hidden w-full flex flex-col h-full max-h-[85dvh]">
+            <h2 class="text-3xl font-black text-center mb-1 text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400 shrink-0">¿QUIÉN ES?</h2>
+            <p class="text-center text-gray-400 text-sm mb-4 shrink-0">Selecciona al sospechoso</p>
+            
+            <div id="voting-list" class="grid grid-cols-1 gap-2 overflow-y-auto custom-scrollbar pb-4 flex-1 min-h-0 px-1"></div>
+            
+            <div class="mt-auto pt-4 border-t border-white/10 text-center shrink-0">
+                <p id="vote-status" class="text-sm font-mono text-purple-300 animate-pulse">Esperando votos...</p>
             </div>
         </div>
 
-        <button id="btn-restart" class="w-full p-5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl font-bold text-lg shadow-xl shadow-purple-900/50 hover:scale-105 transition duration-300">
-            VOLVER AL LOBBY
-        </button>
+        <div id="screen-last-chance" class="hidden w-full flex flex-col items-center justify-center p-4">
+            
+            <div class="mb-8 relative">
+                <div class="absolute inset-0 bg-red-500/20 blur-[50px] rounded-full animate-pulse"></div>
+                <span class="text-8xl relative z-10">🚨</span>
+            </div>
+
+            <h2 class="text-3xl font-black text-center mb-2 uppercase text-red-400">¡Impostor Detectado!</h2>
+            
+            <div id="lc-waiting-view" class="hidden text-center space-y-4">
+                <p class="text-xl font-bold text-white">Es <span id="lc-impostor-name" class="text-yellow-400 text-2xl uppercase">...</span></p>
+                <p class="text-gray-400 text-sm">Tiene una última oportunidad para ganar adivinando la palabra.</p>
+                <div class="w-12 h-12 border-4 border-t-red-500 border-white/10 rounded-full animate-spin mx-auto mt-6"></div>
+            </div>
+
+            <div id="lc-impostor-view" class="hidden w-full space-y-6">
+                <p class="text-center text-gray-300">¡Te han atrapado! Adivina la palabra secreta para robar la victoria.</p>
+                
+                <div class="glass-panel p-6 rounded-3xl space-y-4">
+                    <input type="text" id="lc-guess-input" placeholder="Palabra Secreta" class="glass-input w-full p-4 rounded-xl text-center text-xl font-bold border-red-500/30 focus:border-red-500">
+                    <button id="btn-lc-submit" class="w-full p-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl font-bold text-white shadow-lg hover:scale-105 transition">
+                        INTENTO FINAL
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-results" class="hidden w-full text-center space-y-8">
+            <div class="relative inline-block">
+                <div class="absolute inset-0 bg-yellow-500/20 blur-[60px] rounded-full"></div>
+                <div id="result-icon" class="text-9xl relative z-10 animate-bounce">🏆</div>
+            </div>
+            
+            <div>
+                <h2 id="result-title" class="text-4xl font-black mb-2 uppercase tracking-tight">GANADOR</h2>
+                <p id="result-message" class="text-gray-300 text-lg font-light">Detalles...</p>
+            </div>
+            
+            <div class="glass-panel p-6 rounded-3xl text-left space-y-4">
+                <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                    <span class="text-gray-400 text-xs uppercase tracking-wider">Palabra Secreta</span>
+                    <span id="res-real-word" class="font-bold text-green-400 text-lg">...</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                    <span class="text-gray-400 text-xs uppercase tracking-wider">Impostor</span>
+                    <span id="res-impostor-name" class="font-bold text-red-400 text-lg">...</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 text-xs uppercase tracking-wider">Intento</span>
+                    <span id="res-impostor-guess" class="font-bold text-yellow-400">...</span>
+                </div>
+            </div>
+
+            <button id="btn-restart" class="w-full p-5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl font-bold text-lg shadow-xl shadow-purple-900/50 hover:scale-105 transition duration-300">
+                VOLVER AL LOBBY
+            </button>
+        </div>
+
+    </div> <div id="vote-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-enter">
+        <div class="glass-panel p-6 rounded-3xl w-full max-w-xs text-center space-y-4 border border-white/10 shadow-2xl transform scale-100 transition-all">
+            <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto text-3xl mb-2">
+                🤔
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-white mb-1">¿Confirmar voto?</h3>
+                <p class="text-gray-300 text-sm">Vas a votar por <span id="modal-vote-name" class="font-bold text-white block mt-1 text-lg">...</span></p>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 mt-4">
+                <button id="btn-cancel-vote" class="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 font-bold text-sm text-gray-300 transition">
+                    Cancelar
+                </button>
+                <button id="btn-confirm-vote" class="p-3 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 font-bold text-sm text-white shadow-lg shadow-red-900/30 hover:brightness-110 transition active:scale-95">
+                    SI, ES ÉL
+                </button>
+            </div>
+        </div>
     </div>
 
     <div id="notification-area" class="fixed top-6 left-0 w-full flex justify-center pointer-events-none z-50 px-4"></div>
