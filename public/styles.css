@@ -1,150 +1,191 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap');
 
-/* Reglas base */
+/* --- REGLAS BASE --- */
 body {
     font-family: 'Outfit', sans-serif;
-    color: white;
-    /* Importante: prevenimos el "pull-to-refresh" o rebotes nativos */
+    color: #e2e8f0; /* Blanco suave */
     overscroll-behavior: none; 
     -webkit-tap-highlight-color: transparent;
+    background-color: #020617;
 }
 
-/* Fondo Fijo */
+/* --- FONDO DARK MODE ANIMADO --- */
 .fixed-background {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 0; /* Detrás de todo */
-    background: 
-        radial-gradient(circle at 10% 20%, rgba(147, 51, 234, 0.2) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(37, 99, 235, 0.2) 0%, transparent 40%),
-        linear-gradient(-45deg, #0f0c29, #1a1a2e, #161625);
-    background-size: 150% 150%;
-    animation: smoothBG 20s ease infinite;
+    z-index: 0;
+    background-color: #020617; 
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(88, 28, 135, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(124, 58, 237, 0.15) 0px, transparent 50%);
+    background-size: 100% 100%;
 }
 
-@keyframes smoothBG {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+.fixed-background::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.2;
+    animation: floatingStars 120s linear infinite;
 }
 
-/* Paneles de Cristal */
+@keyframes floatingStars {
+    from { background-position: 0 0; }
+    to { background-position: 0 1000px; }
+}
+
+/* --- ELEMENTOS DE UI (Dark Edition) --- */
+
+/* Avatar Flexible (Tamaño controlado por HTML) */
+.avatar-circle {
+    background: linear-gradient(135deg, #1e1b4b, #312e81);
+    border: 4px solid #4338ca;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    position: relative;
+    /* Sin margen fijo grande para permitir compactación */
+}
+
+.avatar-edit-icon {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: #4f46e5;
+    border-radius: 50%;
+    border: 3px solid #1e1b4b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+/* Inputs Oscuros */
+.game-input {
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 2px solid #3730a3; 
+    color: white;
+    border-radius: 1rem;
+    font-weight: 700;
+    text-align: center; /* Texto centrado por defecto */
+    font-size: 1.1rem;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+    outline: none;
+    transition: all 0.2s;
+}
+.game-input:focus {
+    border-color: #818cf8;
+    background-color: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 15px rgba(129, 140, 248, 0.2);
+}
+/* Clase utilitaria para inputs con icono a la izquierda */
+.game-input.with-icon {
+    text-align: left; /* Alineamos a la izquierda si hay icono */
+}
+
+/* BOTONES 3D */
+.btn-game-3d {
+    position: relative;
+    border: none;
+    outline: none;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 16px;
+    transition: transform 0.1s, filter 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: white;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.3);
+}
+.btn-game-3d:active {
+    transform: translateY(4px);
+}
+
+/* Botón Primario (Violeta) */
+.btn-dark-primary {
+    background: linear-gradient(to bottom, #4c1d95, #3b0764);
+    box-shadow: 0 6px 0 #2e1065, 0 10px 10px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.btn-dark-primary:active {
+    box-shadow: 0 2px 0 #2e1065, 0 4px 4px rgba(0,0,0,0.4);
+}
+
+/* Botón Secundario (Gris/Azul) */
+.btn-dark-secondary {
+    background: linear-gradient(to bottom, #334155, #1e293b);
+    box-shadow: 0 6px 0 #0f172a, 0 10px 10px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+.btn-dark-secondary:active {
+    box-shadow: 0 2px 0 #0f172a, 0 4px 4px rgba(0,0,0,0.4);
+}
+
+/* Botones pequeños superiores */
+.hex-btn {
+    background: #1e1b4b;
+    border: 1px solid #4338ca;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 0 #111;
+    color: #a5b4fc;
+    transition: transform 0.1s;
+    cursor: pointer;
+}
+.hex-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #111;
+}
+
+/* --- TARJETAS Y PANELES --- */
 .glass-panel {
-    background: rgba(30, 30, 40, 0.75); 
-    box-shadow: 
-        0 8px 32px 0 rgba(0, 0, 0, 0.4),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.1); 
+    background: rgba(15, 23, 42, 0.7); 
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05); 
+    border-radius: 24px;
     transform: translateZ(0);
 }
 
-@supports (backdrop-filter: blur(1px)) {
-    .glass-panel {
-        background: rgba(30, 30, 40, 0.6);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-    }
-}
-
-.glass-input {
-    background: rgba(0, 0, 0, 0.4);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
-    border: none;
-    color: white;
-    transition: all 0.2s;
-}
-.glass-input:focus {
-    box-shadow: inset 0 0 0 1px #a855f7, 0 0 15px rgba(168, 85, 247, 0.2);
-    background: rgba(0, 0, 0, 0.6);
-    outline: none;
-}
-
-/* --- CORRECCIÓN DE PARPADEO EN TARJETAS --- */
 .player-card {
-    background: rgba(255, 255, 255, 0.05);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-    
-    /* Suavizado optimizado */
+    background: rgba(30, 41, 59, 0.4);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
     transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), background-color 0.2s;
-    
-    /* Estos trucos fuerzan la aceleración de hardware y evitan el 'flash' */
     transform: translateZ(0); 
     -webkit-font-smoothing: subpixel-antialiased;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     will-change: transform;
+    border-radius: 16px;
 }
-
 .player-card:hover {
     transform: scale(1.02) translateZ(0);
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+    background: rgba(46, 16, 101, 0.4);
+    box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.3);
 }
 
-/* LÓGICA DE TARJETA 3D */
-#card-inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-    transform-style: preserve-3d;
-}
-
-#card-container:hover #card-inner:not(.is-flipped) {
-    transform: scale(1.02);
-}
-
-.is-flipped {
-    transform: rotateY(180deg);
-}
-
-#card-container:hover .is-flipped {
-    transform: rotateY(180deg) scale(1.02);
-}
-
-.card-face {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    border-radius: 2rem;
-    box-shadow: 
-        inset 0 0 0 2px rgba(255, 255, 255, 0.15),
-        0 20px 50px rgba(0,0,0,0.5);
-    overflow: hidden;
-    background-color: #161625;
-}
-
-.card-front {
-    background: linear-gradient(135deg, #1f1f2e 0%, #161625 100%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.card-back {
-    transform: rotateY(180deg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: black; 
-}
-
-/* Animaciones y utilidades */
+/* Animaciones 3D */
+#card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
 .perspective-1000 { perspective: 1000px; }
+.is-flipped { transform: rotateY(180deg); }
+.card-face { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 2rem; overflow: hidden; background-color: #0f172a; border: 1px solid rgba(255,255,255,0.05); }
+.card-front { background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.card-back { transform: rotateY(180deg); display: flex; flex-direction: column; align-items: center; justify-content: center; background: #020617; }
 
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-.animate-enter {
-    animation: fadeInUp 0.3s ease-out forwards;
-}
+/* Scrollbar personalizada */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
 
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+/* Utilidades de animación */
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+.animate-enter { animation: fadeInUp 0.3s ease-out forwards; }

@@ -22,6 +22,11 @@ const voteModal = document.getElementById('vote-modal');
 const modalVoteName = document.getElementById('modal-vote-name');
 let pendingVoteId = null;
 
+// Variables para Modal Expulsión
+const kickModal = document.getElementById('kick-modal');
+const modalKickName = document.getElementById('modal-kick-name');
+let pendingKickId = null;
+
 let myUsername = '';
 let currentRoom = '';
 let currentPlayers = [];
@@ -90,23 +95,15 @@ document.getElementById('btn-imp-plus').addEventListener('click', () => {
     }
 });
 
-// --- MODIFICACIÓN: Validación de Input de Sala (Solo 4 números + 1 letra) ---
+// Validación de Input de Sala
 document.getElementById('room-code-input').addEventListener('input', function(e) {
     let value = e.target.value.toUpperCase();
-
-    // 1. Extraer solo los números iniciales (máximo 4)
     let numbers = value.replace(/[^0-9]/g, '').substring(0, 4);
-
-    // 2. Extraer la letra final (solo si ya hay 4 números)
     let letter = '';
     if (numbers.length === 4) {
-        // Tomamos lo que queda después de los números
         const rest = value.substring(4);
-        // Buscamos la primera letra que aparezca
         letter = rest.replace(/[^A-Z]/g, '').substring(0, 1);
     }
-
-    // Actualizamos el valor del input
     e.target.value = numbers + letter;
 });
 
@@ -123,7 +120,6 @@ document.getElementById('btn-join').addEventListener('click', () => {
     const username = document.getElementById('username').value;
     const roomCode = document.getElementById('room-code-input').value;
     if (!username || !roomCode) return showNotification('Faltan datos');
-    // Validación extra antes de enviar
     if (roomCode.length !== 5) return showNotification('Código incompleto');
     
     myUsername = username;
@@ -144,7 +140,6 @@ document.getElementById('btn-leave-lobby').addEventListener('click', () => {
     showScreen('home');
 });
 
-// Al conectar, intentar reconectar sesión previa
 socket.on('connect', () => {
     const savedRoom = localStorage.getItem('impostor_room');
     const savedUser = localStorage.getItem('impostor_user');
@@ -168,7 +163,6 @@ socket.on('roomJoined', ({ roomCode }) => {
     showScreen('lobby');
 });
 
-// --- RECONEXIÓN EXITOSA ---
 socket.on('reconnectSuccess', (data) => {
     currentRoom = data.roomCode;
     myUsername = data.username;
@@ -254,11 +248,11 @@ function updatePlayerListUI(players) {
 
         if (allReady && enoughPlayers) {
             startButton.disabled = false;
+            startButton.className = "btn-game-3d btn-dark-primary w-full h-14 text-lg hover:brightness-110 active:scale-[0.98]";
             startButton.innerText = "INICIAR PARTIDA";
-            startButton.className = "w-full p-4 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl font-bold shadow-lg shadow-emerald-900/40 hover:brightness-110 transition transform active:scale-95";
         } else {
             startButton.disabled = true;
-            startButton.className = "w-full p-4 bg-gray-700/50 rounded-xl font-bold text-gray-400 cursor-not-allowed border border-white/5";
+            startButton.className = "btn-game-3d w-full h-14 text-lg bg-gray-700/50 text-gray-500 cursor-not-allowed border border-white/5";
             
             if (!enoughPlayers) {
                 const missing = 3 - players.length;
@@ -282,9 +276,8 @@ function updatePlayerListUI(players) {
         const isMe = p.sessionToken === sessionToken; 
         
         const gradients = [
-            'from-pink-500 to-rose-500', 'from-purple-500 to-indigo-500', 
-            'from-cyan-500 to-blue-500', 'from-emerald-500 to-green-500',
-            'from-amber-500 to-orange-500'
+            'from-indigo-500 to-purple-600', 'from-blue-600 to-indigo-700', 
+            'from-violet-600 to-fuchsia-700', 'from-sky-600 to-blue-700'
         ];
         const gradIndex = p.username.length % gradients.length;
         const bgGradient = gradients[gradIndex];
@@ -295,8 +288,12 @@ function updatePlayerListUI(players) {
 
         let kickButton = '';
         if (me && me.isHost && !isMe) {
+            // Se añade clase 'btn-kick' y data-id, y data-name
             kickButton = `
-                <button class="btn-kick ml-2 w-8 h-8 rounded-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/30 transition flex items-center justify-center" data-id="${p.id}" title="Expulsar">
+                <button class="btn-kick ml-2 w-8 h-8 rounded-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/30 transition flex items-center justify-center" 
+                    data-id="${p.id}" 
+                    data-name="${p.username}"
+                    title="Expulsar">
                     ✕
                 </button>`;
         }
@@ -324,15 +321,31 @@ function updatePlayerListUI(players) {
         impDisplay.innerText = localImpostorCount;
     }
 
+    // Listener para botones de expulsión (abre modal)
     document.querySelectorAll('.btn-kick').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const playerId = btn.getAttribute('data-id');
-            if(confirm("¿Expulsar a este jugador?")) {
-                socket.emit('kickPlayer', { roomCode: currentRoom, playerId });
-            }
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            pendingKickId = btn.getAttribute('data-id');
+            const playerName = btn.getAttribute('data-name');
+            modalKickName.innerText = playerName;
+            kickModal.classList.remove('hidden');
         });
     });
 }
+
+// Lógica del Modal Expulsión
+document.getElementById('btn-cancel-kick').addEventListener('click', () => {
+    kickModal.classList.add('hidden');
+    pendingKickId = null;
+});
+
+document.getElementById('btn-confirm-kick').addEventListener('click', () => {
+    if (pendingKickId) {
+        socket.emit('kickPlayer', { roomCode: currentRoom, playerId: pendingKickId });
+        kickModal.classList.add('hidden');
+        pendingKickId = null;
+    }
+});
 
 socket.on('updatePlayerList', updatePlayerListUI);
 socket.on('error', (msg) => {
