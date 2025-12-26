@@ -24,8 +24,12 @@
 
             <div class="flex flex-col items-center w-full px-6 space-y-6 shrink-0">
                 
-                <div class="avatar-circle w-32 h-32 border-[3px]">
-                    <span class="text-6xl select-none filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">🕵️</span>
+                <div class="avatar-circle w-32 h-32 border-[3px] relative group">
+                    <span id="current-avatar-display" class="text-6xl select-none filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">🕵️</span>
+                    
+                    <div id="btn-edit-avatar" class="avatar-edit-icon w-10 h-10 cursor-pointer hover:bg-indigo-500 hover:scale-110 transition absolute bottom-0 right-0 border-2 border-indigo-900 shadow-lg z-10 flex items-center justify-center bg-indigo-600 rounded-full">
+                        <span class="text-lg">✏️</span>
+                    </div>
                 </div>
 
                 <div class="w-full space-y-4">
@@ -109,11 +113,16 @@
                         <h2 class="text-3xl font-bold text-white mb-2">Tu Identidad</h2>
                         <p class="text-gray-500 text-sm uppercase tracking-widest">Toca para revelar</p>
                     </div>
-                    <div class="card-face card-back">
+                    <div class="card-face card-back flex flex-col items-center justify-center p-4 text-center">
                         <div class="absolute inset-0 bg-gradient-to-b from-indigo-900/40 to-transparent pointer-events-none"></div>
-                        <p id="role-title" class="text-sm font-black uppercase tracking-[0.2em] mb-4 text-indigo-400 z-10">ROL</p>
-                        <h1 id="secret-word" class="text-5xl font-black text-white mb-6 text-center z-10 leading-tight">...</h1>
-                        <p id="category-hint" class="hidden text-xs font-bold bg-white/10 px-4 py-2 rounded-full text-indigo-200 z-10 border border-white/5">...</p>
+                        
+                        <h2 id="role-title" class="text-5xl font-black uppercase tracking-widest mb-6 text-white z-10 leading-none drop-shadow-lg">...</h2>
+                        
+                        <p id="word-label" class="hidden text-xs font-bold text-indigo-300 uppercase tracking-[0.2em] mb-2 z-10">Palabra:</p>
+                        
+                        <h1 id="secret-word" class="text-6xl font-black text-white mb-2 z-10 leading-tight drop-shadow-xl">...</h1>
+                        
+                        <p id="category-hint" class="hidden text-xs font-bold bg-white/10 px-4 py-2 rounded-full text-indigo-200 z-10 border border-white/5 mt-4">...</p>
                     </div>
                 </div>
             </div>
@@ -143,13 +152,15 @@
             
             <div id="lc-waiting-view" class="hidden text-center space-y-4">
                 <p class="text-xl font-bold text-gray-300">Es <span id="lc-impostor-name" class="text-white text-2xl uppercase border-b-2 border-red-500">...</span></p>
+                <p class="text-gray-400 text-sm">A la espera de que escriba una palabra el impostor.</p>
                 <div class="w-12 h-12 border-4 border-t-red-500 border-white/10 rounded-full animate-spin mx-auto mt-6"></div>
             </div>
 
             <div id="lc-impostor-view" class="hidden w-full space-y-6">
                 <p class="text-center text-gray-400">¡Te han atrapado! Adivina la palabra secreta.</p>
                 <div class="glass-panel p-6 space-y-4">
-                    <input type="text" id="lc-guess-input" placeholder="Palabra Secreta" class="game-input w-full border-red-500/30 focus:border-red-500">
+                    <label class="block text-indigo-300 font-bold text-sm uppercase tracking-widest text-center">Palabra</label>
+                    <input type="text" id="lc-guess-input" placeholder="" class="game-input w-full border-red-500/30 focus:border-red-500 h-16 text-2xl text-center">
                     <button id="btn-lc-submit" class="btn-game-3d w-full h-14 bg-red-600 border border-red-400 text-white shadow-[0_4px_0_#991b1b]">
                         INTENTO FINAL
                     </button>
@@ -157,20 +168,21 @@
             </div>
         </div>
 
-        <div id="screen-results" class="hidden w-full text-center space-y-8">
+        <div id="screen-results" class="hidden w-full text-center space-y-6 pt-16">
             <div class="relative inline-block">
                 <div class="absolute inset-0 bg-yellow-500/10 blur-[60px] rounded-full"></div>
                 <div id="result-icon" class="text-9xl relative z-10 animate-bounce">🏆</div>
             </div>
             
             <div>
-                <h2 id="result-title" class="text-4xl font-black mb-2 uppercase tracking-tight">GANADOR</h2>
-                <p id="result-message" class="text-gray-400 text-lg font-light">Detalles...</p>
+                <h2 id="result-title" class="text-4xl font-black mb-1 uppercase tracking-tight">GANADOR</h2>
+                <p id="res-winners" class="text-2xl font-bold text-white mb-2 leading-tight">...</p>
+                <p id="result-message" class="text-gray-400 text-sm font-light">Detalles...</p>
             </div>
             
             <div class="glass-panel p-6 text-left space-y-4">
                 <div class="flex justify-between items-center border-b border-white/10 pb-2">
-                    <span class="text-gray-500 text-xs uppercase tracking-wider">Palabra Secreta</span>
+                    <span class="text-gray-500 text-xs uppercase tracking-wider">Palabra</span>
                     <span id="res-real-word" class="font-bold text-emerald-400 text-lg">...</span>
                 </div>
                 <div class="flex justify-between items-center border-b border-white/10 pb-2">
@@ -190,7 +202,7 @@
 
     </div> 
     
-    <div id="vote-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-enter">
+    <div id="vote-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 modal-enter">
         <div class="glass-panel p-6 w-full max-w-xs text-center space-y-4 border border-white/10 shadow-2xl transform scale-100 transition-all">
             <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-3xl mb-2 border border-red-500/20">
                 🤔
@@ -228,6 +240,34 @@
                 <button id="btn-confirm-kick" class="btn-game-3d w-full h-12 bg-red-700 border-none shadow-[0_4px_0_#7f1d1d] text-sm">
                     EXPULSAR
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="avatar-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 modal-enter">
+        <div class="glass-panel w-full max-w-sm p-6 rounded-3xl border border-white/10 shadow-2xl flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center mb-4 shrink-0">
+                <h3 class="text-xl font-black text-white uppercase">Elige tu Avatar</h3>
+                <button id="btn-close-avatar" class="text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
+            </div>
+            
+            <div class="grid grid-cols-4 gap-3 overflow-y-auto custom-scrollbar p-2 flex-1 min-h-0">
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">🕵️</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">🍣</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">🐷</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">👹</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">📖</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">🤡</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">🧙‍♀️</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">👻</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">👽</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">🤖</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">🦄</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">💀</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">🎃</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">🐶</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">🐱</button>
+                <button class="avatar-option text-4xl p-2 rounded-xl hover:bg-white/10 transition active:scale-95">🦊</button>
             </div>
         </div>
     </div>

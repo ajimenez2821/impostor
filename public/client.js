@@ -17,20 +17,42 @@ const screens = {
     results: document.getElementById('screen-results')
 };
 
-// Variables para el Modal de Votación
+// Variables Modales
 const voteModal = document.getElementById('vote-modal');
 const modalVoteName = document.getElementById('modal-vote-name');
 let pendingVoteId = null;
 
-// Variables para Modal Expulsión
 const kickModal = document.getElementById('kick-modal');
 const modalKickName = document.getElementById('modal-kick-name');
 let pendingKickId = null;
+
+const avatarModal = document.getElementById('avatar-modal');
+const currentAvatarDisplay = document.getElementById('current-avatar-display');
+let myAvatar = '🕵️';
 
 let myUsername = '';
 let currentRoom = '';
 let currentPlayers = [];
 let localImpostorCount = 1;
+
+// --- LÓGICA DE SELECCIÓN DE AVATAR ---
+
+document.getElementById('btn-edit-avatar').addEventListener('click', () => {
+    avatarModal.classList.remove('hidden');
+});
+
+document.getElementById('btn-close-avatar').addEventListener('click', () => {
+    avatarModal.classList.add('hidden');
+});
+
+document.querySelectorAll('.avatar-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (navigator.vibrate) navigator.vibrate(10); 
+        myAvatar = btn.innerText;
+        currentAvatarDisplay.innerText = myAvatar;
+        avatarModal.classList.add('hidden');
+    });
+});
 
 // --- FUNCIONES UTILITARIAS ---
 
@@ -54,8 +76,6 @@ function showScreen(screenName) {
 
 function showNotification(msg, type = 'error') {
     const area = document.getElementById('notification-area');
-    
-    // --- LIMPIEZA DE NOTIFICACIONES ANTERIORES (Evita stacking) ---
     area.innerHTML = ''; 
 
     const div = document.createElement('div');
@@ -102,15 +122,11 @@ document.getElementById('btn-imp-plus').addEventListener('click', () => {
     }
 });
 
-// Validación de Input de Sala (2 números + 1 letra)
+// Validación Input (3 caracteres)
 document.getElementById('room-code-input').addEventListener('input', function(e) {
     let value = e.target.value.toUpperCase();
-    
-    // Solo 2 números
     let numbers = value.replace(/[^0-9]/g, '').substring(0, 2); 
-    
     let letter = '';
-    // Si ya tenemos 2 números, buscamos la letra
     if (numbers.length === 2) {
         const rest = value.substring(2);
         letter = rest.replace(/[^A-Z]/g, '').substring(0, 1);
@@ -118,25 +134,23 @@ document.getElementById('room-code-input').addEventListener('input', function(e)
     e.target.value = numbers + letter;
 });
 
-// --- LÓGICA DE SOCKETS Y BOTONES ---
+// --- LÓGICA DE SOCKETS ---
 
 document.getElementById('btn-create').addEventListener('click', () => {
     const username = document.getElementById('username').value;
     if (!username) return showNotification('Escribe un nombre');
     myUsername = username;
-    socket.emit('createRoom', { username, sessionToken });
+    socket.emit('createRoom', { username, sessionToken, avatar: myAvatar });
 });
 
 document.getElementById('btn-join').addEventListener('click', () => {
     const username = document.getElementById('username').value;
     const roomCode = document.getElementById('room-code-input').value;
     if (!username || !roomCode) return showNotification('Faltan datos');
-    
-    // CAMBIO: Validación de longitud 3
     if (roomCode.length !== 3) return showNotification('Código incompleto');
     
     myUsername = username;
-    socket.emit('joinRoom', { username, roomCode, sessionToken });
+    socket.emit('joinRoom', { username, roomCode, sessionToken, avatar: myAvatar });
 });
 
 document.getElementById('btn-leave-lobby').addEventListener('click', () => {
@@ -200,7 +214,7 @@ socket.on('reconnectSuccess', (data) => {
             const secretWordEl = document.getElementById('secret-word');
             const roleTitle = document.getElementById('role-title');
             if (data.gameData.role === 'impostor') {
-                roleTitle.innerText = 'ERES EL IMPOSTOR';
+                roleTitle.innerText = 'IMPOSTOR';
                 secretWordEl.innerText = "🕵️";
             } else {
                 roleTitle.innerText = 'CIVIL';
@@ -285,7 +299,6 @@ function updatePlayerListUI(players) {
         const li = document.createElement('li');
         li.className = 'player-card p-3 rounded-2xl flex items-center justify-between group';
         
-        const initial = p.username.charAt(0).toUpperCase();
         const isMe = p.sessionToken === sessionToken; 
         
         const gradients = [
@@ -310,10 +323,12 @@ function updatePlayerListUI(players) {
                 </button>`;
         }
 
+        const avatarToUse = p.avatar || '🕵️';
+
         li.innerHTML = `
             <div class="flex items-center space-x-4">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${bgGradient} flex items-center justify-center text-white font-bold shadow-lg">
-                    ${initial}
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${bgGradient} flex items-center justify-center text-2xl shadow-lg border border-white/10">
+                    ${avatarToUse}
                 </div>
                 <div class="flex flex-col">
                     <span class="font-bold text-sm ${isMe ? 'text-white' : 'text-gray-300'}">${p.username}</span>
@@ -333,7 +348,6 @@ function updatePlayerListUI(players) {
         impDisplay.innerText = localImpostorCount;
     }
 
-    // Listener para botones de expulsión
     document.querySelectorAll('.btn-kick').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -345,7 +359,6 @@ function updatePlayerListUI(players) {
     });
 }
 
-// Lógica del Modal Expulsión
 document.getElementById('btn-cancel-kick').addEventListener('click', () => {
     kickModal.classList.add('hidden');
     pendingKickId = null;
@@ -396,18 +409,24 @@ function handleGameStarted({ role, word, hint }) {
     const secretWordEl = document.getElementById('secret-word');
     const categoryHintEl = document.getElementById('category-hint');
     const roleTitle = document.getElementById('role-title');
+    const wordLabel = document.getElementById('word-label');
 
     if (role === 'impostor') {
-        roleTitle.innerText = 'ERES EL IMPOSTOR';
-        roleTitle.className = 'text-sm font-black uppercase tracking-[0.2em] mb-4 text-red-500 z-10 animate-pulse';
+        roleTitle.innerText = 'IMPOSTOR'; 
+        roleTitle.className = 'text-5xl font-black uppercase tracking-widest mb-8 text-red-500 z-10 animate-pulse drop-shadow-lg';
+        
         secretWordEl.innerText = "🕵️"; 
+        wordLabel.classList.add('hidden'); 
         
         categoryHintEl.classList.remove('hidden');
         categoryHintEl.style.display = ''; 
         categoryHintEl.innerText = hint ? hint : "Infiltrate sin ser detectado";
     } else {
         roleTitle.innerText = 'CIVIL';
-        roleTitle.className = 'text-sm font-black uppercase tracking-[0.2em] mb-4 text-emerald-400 z-10';
+        roleTitle.className = 'text-5xl font-black uppercase tracking-widest mb-6 text-emerald-400 z-10 drop-shadow-lg';
+        
+        wordLabel.classList.remove('hidden');
+        
         secretWordEl.innerText = word;
         
         categoryHintEl.innerText = "";
@@ -418,8 +437,6 @@ function handleGameStarted({ role, word, hint }) {
 
 socket.on('gameStarted', handleGameStarted);
 
-// --- LÓGICA DE ÚLTIMA OPORTUNIDAD (LAST CHANCE) ---
-
 socket.on('startLastChance', ({ impostorName, isYou }) => {
     showScreen('lastChance');
     
@@ -429,13 +446,11 @@ socket.on('startLastChance', ({ impostorName, isYou }) => {
     const guessInput = document.getElementById('lc-guess-input');
 
     if (isYou) {
-        // Eres el impostor atrapado
         waitingView.classList.add('hidden');
         impostorView.classList.remove('hidden');
         guessInput.value = "";
         guessInput.focus();
     } else {
-        // Eres civil o otro impostor
         impostorView.classList.add('hidden');
         waitingView.classList.remove('hidden');
         nameDisplay.innerText = impostorName;
@@ -451,14 +466,11 @@ document.getElementById('btn-lc-submit').addEventListener('click', () => {
     }
 });
 
-// --- VOTACIÓN Y MODAL ---
-
 document.getElementById('btn-goto-vote').addEventListener('click', () => {
     showScreen('voting');
     generateVotingButtons(); 
 });
 
-// Cancelar modal
 document.getElementById('btn-cancel-vote').addEventListener('click', () => {
     voteModal.classList.add('hidden');
     pendingVoteId = null;
@@ -468,7 +480,6 @@ document.getElementById('btn-cancel-vote').addEventListener('click', () => {
     });
 });
 
-// Confirmar modal
 document.getElementById('btn-confirm-vote').addEventListener('click', () => {
     if (pendingVoteId) {
         socket.emit('submitVote', { roomCode: currentRoom, votedId: pendingVoteId });
@@ -494,14 +505,13 @@ function generateVotingButtons() {
         if (p.sessionToken === sessionToken) return; 
 
         const btn = document.createElement('button');
-        // Estilo compacto
         btn.className = 'w-full glass-panel p-3 rounded-xl flex items-center space-x-3 hover:bg-white/10 transition group border border-transparent hover:border-white/10 active:scale-[0.98]';
         
-        const initial = p.username.charAt(0).toUpperCase();
-        
+        const avatarToUse = p.avatar || '🕵️';
+
         btn.innerHTML = `
-            <div class="w-10 h-10 rounded-lg bg-gray-700/50 flex items-center justify-center text-white font-bold text-base shadow-inner shrink-0">
-                ${initial}
+            <div class="w-10 h-10 rounded-lg bg-gray-700/50 flex items-center justify-center text-xl shadow-inner shrink-0">
+                ${avatarToUse}
             </div>
             <div class="text-left flex-1 min-w-0">
                 <span class="block font-bold text-white text-base truncate leading-tight">${p.username}</span>
@@ -534,16 +544,23 @@ function handleGameEnded(data) {
     const resultTitle = document.getElementById('result-title');
     const resultMsg = document.getElementById('result-message');
     const resultIcon = document.getElementById('result-icon');
+    const resWinners = document.getElementById('res-winners');
 
     if (data.winner === 'impostor') {
         resultIcon.innerText = "😈";
-        resultTitle.innerText = "VICTORIA IMPOSTORA";
-        resultTitle.className = "text-4xl font-black mb-2 uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500";
+        // MODIFICADO: Plural
+        resultTitle.innerText = "VICTORIA IMPOSTORES";
+        resultTitle.className = "text-4xl font-black mb-1 uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500";
     } else {
         resultIcon.innerText = "🛡️";
-        resultTitle.innerText = "VICTORIA CIVIL"; 
-        resultTitle.className = "text-4xl font-black mb-2 uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400";
+        // MODIFICADO: Plural
+        resultTitle.innerText = "VICTORIA CIVILES"; 
+        resultTitle.className = "text-4xl font-black mb-1 uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400";
     }
+
+    const names = data.winningNames.join(', ');
+    const prefix = data.winningNames.length > 1 ? "HAN GANADO" : "HA GANADO";
+    resWinners.innerText = `${prefix} ${names}`;
 
     resultMsg.innerText = data.message;
     document.getElementById('res-real-word').innerText = data.realWord;
@@ -562,7 +579,6 @@ document.getElementById('btn-restart').addEventListener('click', () => {
     document.getElementById('secret-word').innerText = "...";
     document.getElementById('role-title').innerText = "ROL";
     
-    // Limpieza
     document.getElementById('lc-guess-input').value = "";
     document.getElementById('vote-status').innerText = "Esperando votos...";
     document.getElementById('voting-list').innerHTML = "";

@@ -72,10 +72,9 @@ function finalizePlayerRemoval(socketId, roomCode) {
 io.on('connection', (socket) => {
     
     // --- CREAR SALA ---
-    socket.on('createRoom', ({ username, sessionToken }) => {
+    socket.on('createRoom', ({ username, sessionToken, avatar }) => {
         const roomCode = generateRoomCode();
         
-        // LOG ACTUALIZADO: ID - User - Sala
         console.log(`Usuario conectado (Crea Sala): ${socket.id} - ${username} - Sala: ${roomCode}`);
 
         rooms[roomCode] = {
@@ -83,6 +82,7 @@ io.on('connection', (socket) => {
             players: [{ 
                 id: socket.id, 
                 username, 
+                avatar: avatar || '🕵️', 
                 score: 0, 
                 isHost: true,
                 avatarColor: getRandomColor(),
@@ -106,18 +106,18 @@ io.on('connection', (socket) => {
     });
 
     // --- UNIRSE A SALA ---
-    socket.on('joinRoom', ({ username, roomCode, sessionToken }) => {
+    socket.on('joinRoom', ({ username, roomCode, sessionToken, avatar }) => {
         const code = roomCode.toUpperCase();
         const room = rooms[code];
         
         if (room && room.gameState === 'lobby') {
-            // LOG ACTUALIZADO: ID - User - Sala (CORREGIDO AQUÍ)
             console.log(`Usuario conectado (Se une): ${socket.id} - ${username} - Sala: ${code}`);
 
             const isOriginalHost = room.creatorToken === sessionToken;
             room.players.push({ 
                 id: socket.id, 
                 username, 
+                avatar: avatar || '🕵️',
                 score: 0, 
                 isHost: isOriginalHost, 
                 avatarColor: getRandomColor(),
@@ -145,7 +145,6 @@ io.on('connection', (socket) => {
         if (playerIndex !== -1) {
             const player = room.players[playerIndex];
             
-            // LOG ACTUALIZADO: ID - User - Sala
             console.log(`Usuario conectado (Reconexión): ${socket.id} - ${player.username} - Sala: ${roomCode}`);
 
             const oldSocketId = player.id;
@@ -320,7 +319,8 @@ io.on('connection', (socket) => {
         const isCorrect = cleanGuess === cleanTarget;
         
         let winner = 'civilians';
-        let message = 'El impostor falló. ¡Victoria Civil!';
+        // --- CAMBIO: Plural ---
+        let message = 'El impostor falló. ¡Victoria Civiles!';
         
         if (isCorrect) {
             winner = 'impostor';
@@ -436,11 +436,20 @@ function finalizeGame(roomCode, winner, message) {
     if (!room) return;
 
     const impostorNames = room.players.filter(p => room.impostorIds.includes(p.id)).map(p => p.username);
+    const civilianNames = room.players.filter(p => !room.impostorIds.includes(p.id)).map(p => p.username);
     
+    let winningNames = [];
+    if (winner === 'impostor') {
+        winningNames = impostorNames;
+    } else {
+        winningNames = civilianNames;
+    }
+
     const resultsData = { 
         winner, 
         message, 
         impostors: impostorNames, 
+        winningNames: winningNames, // Nombres ganadores
         realWord: room.currentWord, 
         impostorGuess: room.impostorGuess 
     };
