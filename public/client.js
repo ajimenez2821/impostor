@@ -54,17 +54,26 @@ function showScreen(screenName) {
 
 function showNotification(msg, type = 'error') {
     const area = document.getElementById('notification-area');
+    
+    // --- NUEVO: Limpiar notificaciones anteriores para evitar duplicados ---
+    area.innerHTML = ''; 
+    // ---------------------------------------------------------------------
+
     const div = document.createElement('div');
     const bgColor = type === 'error' ? 'bg-red-500/90' : 'bg-emerald-500/90';
-    div.className = `${bgColor} backdrop-blur-md text-white px-6 py-4 rounded-2xl shadow-2xl mb-3 animate-enter font-bold text-sm pointer-events-auto border border-white/10 flex items-center gap-3 min-w-[300px] justify-center`;
+    div.className = `${bgColor} backdrop-blur-md text-white px-6 py-4 rounded-2xl shadow-2xl animate-enter font-bold text-sm pointer-events-auto border border-white/10 flex items-center gap-3 min-w-[300px] justify-center`;
     const icon = type === 'error' ? '⚠️' : '✨';
     div.innerHTML = `<span>${icon}</span> <span>${msg}</span>`;
     area.appendChild(div);
+    
     setTimeout(() => {
         div.style.transition = 'all 0.5s ease';
         div.style.opacity = '0';
         div.style.transform = 'translateY(-20px)';
-        setTimeout(() => div.remove(), 500);
+        setTimeout(() => {
+            // Verificamos si sigue existiendo antes de borrarlo (por si hicimos el innerHTML = '' antes)
+            if(div.parentNode) div.remove();
+        }, 500);
     }, 3000);
 }
 
