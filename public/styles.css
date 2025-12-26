@@ -1,34 +1,135 @@
-/* Utilidades 3D */
-.perspective-1000 {
-    perspective: 1000px;
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background: 
+        radial-gradient(circle at 10% 20%, rgba(147, 51, 234, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(37, 99, 235, 0.2) 0%, transparent 40%),
+        linear-gradient(-45deg, #0f0c29, #1a1a2e, #161625);
+    background-size: 150% 150%;
+    animation: smoothBG 20s ease infinite;
+    overflow: hidden;
+    color: white;
 }
-.transform-style-3d {
+
+@keyframes smoothBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Paneles de Cristal */
+.glass-panel {
+    background: rgba(30, 30, 40, 0.75); 
+    box-shadow: 
+        0 8px 32px 0 rgba(0, 0, 0, 0.4),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1); /* Borde mediante sombra interna */
+    transform: translateZ(0);
+}
+
+@supports (backdrop-filter: blur(1px)) {
+    .glass-panel {
+        background: rgba(30, 30, 40, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+}
+
+.glass-input {
+    background: rgba(0, 0, 0, 0.4);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15); /* Borde sombra */
+    border: none;
+    color: white;
+    transition: all 0.2s;
+}
+.glass-input:focus {
+    box-shadow: inset 0 0 0 1px #a855f7, 0 0 15px rgba(168, 85, 247, 0.2);
+    background: rgba(0, 0, 0, 0.6);
+    outline: none;
+}
+
+.player-card {
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    transition: transform 0.1s ease-out, background-color 0.1s;
+    will-change: transform;
+}
+.player-card:hover {
+    transform: scale(1.02);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+/* --- LÓGICA DE TARJETA 3D CORREGIDA --- */
+
+#card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efecto rebote suave */
     transform-style: preserve-3d;
 }
-.backface-hidden {
-    backface-visibility: hidden;
+
+/* ESTADO 1: Hover normal (sin voltear) */
+#card-container:hover #card-inner:not(.is-flipped) {
+    transform: scale(1.02);
 }
-.rotate-y-180 {
-    transform: rotateY(180deg);
-}
+
+/* ESTADO 2: Volteado (Prioridad sobre hover) */
 .is-flipped {
     transform: rotateY(180deg);
 }
 
-/* Animaciones */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
+/* ESTADO 3: Volteado + Hover (Mantiene rotación y escala) */
+#card-container:hover .is-flipped {
+    transform: rotateY(180deg) scale(1.02);
 }
 
-/* Scrollbar minimalista */
-::-webkit-scrollbar {
-    width: 8px;
+/* Caras de la tarjeta */
+.card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    border-radius: 2rem;
+    
+    /* CORRECCIÓN BORDE: Sombra interna en lugar de border para evitar cortes */
+    box-shadow: 
+        inset 0 0 0 2px rgba(255, 255, 255, 0.15),
+        0 20px 50px rgba(0,0,0,0.5);
+        
+    overflow: hidden;
+    background-color: #161625; /* Fondo base para evitar transparencia */
 }
-::-webkit-scrollbar-thumb {
-    background: #4B5563; 
-    border-radius: 4px;
+
+.card-front {
+    background: linear-gradient(135deg, #1f1f2e 0%, #161625 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
+
+.card-back {
+    transform: rotateY(180deg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: black; /* Fondo negro puro para contraste */
+}
+
+/* Animaciones y utilidades */
+.perspective-1000 { perspective: 1000px; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-enter {
+    animation: fadeInUp 0.3s ease-out forwards;
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
