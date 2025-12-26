@@ -1,0 +1,18 @@
+[
+  {
+    "category": "Frutas",
+    "words": ["Manzana", "Plátano", "Uva", "Sandía", "Kiwi", "Fresa"]
+  },
+  {
+    "category": "Animales",
+    "words": ["Perro", "Gato", "Elefante", "Jirafa", "Tigre", "Pingüino"]
+  },
+  {
+    "category": "Profesiones",
+    "words": ["Bombero", "Médico", "Policía", "Profesor", "Astronauta"]
+  },
+  {
+    "category": "Lugares",
+    "words": ["Playa", "Montaña", "Escuela", "Hospital", "Cine", "Parque"]
+  }
+]
