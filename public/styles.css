@@ -9,13 +9,12 @@ body {
     background-color: #020617;
 }
 
-/* --- OPTIMIZACIÓN VELOCIDAD MÓVIL (CRÍTICO) --- */
-/* Esto elimina el delay de 300ms al pulsar en móviles */
+/* --- OPTIMIZACIÓN VELOCIDAD MÓVIL --- */
 button, .avatar-option, .avatar-edit-icon, input {
     touch-action: manipulation; 
 }
 
-/* --- FONDO DARK MODE ANIMADO --- */
+/* --- FONDO DARK MODE OPTIMIZADO (BAJO CONSUMO) --- */
 .fixed-background {
     position: fixed;
     top: 0;
@@ -23,26 +22,20 @@ button, .avatar-option, .avatar-edit-icon, input {
     width: 100vw;
     height: 100vh;
     z-index: 0;
+    /* Fondo sólido + degradado estático (sin animaciones costosas) */
     background-color: #020617; 
-    background-image: 
-        radial-gradient(at 0% 0%, rgba(88, 28, 135, 0.15) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(124, 58, 237, 0.15) 0px, transparent 50%);
-    background-size: 100% 100%;
+    background-image: radial-gradient(circle at center, #1e1b4b 0%, #020617 70%);
 }
 
-.fixed-background::after {
+/* Patrón de puntos estático */
+.fixed-background::before {
     content: "";
     position: absolute;
     inset: 0;
     background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-    background-size: 40px 40px;
-    opacity: 0.2;
-    animation: floatingStars 120s linear infinite;
-}
-
-@keyframes floatingStars {
-    from { background-position: 0 0; }
-    to { background-position: 0 1000px; }
+    background-size: 30px 30px;
+    opacity: 0.3;
+    pointer-events: none;
 }
 
 /* --- ELEMENTOS DE UI --- */
@@ -54,7 +47,8 @@ button, .avatar-option, .avatar-edit-icon, input {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    /* Sombra simplificada para rendimiento */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     position: relative;
 }
 
@@ -68,7 +62,7 @@ button, .avatar-option, .avatar-edit-icon, input {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
 
 .game-input {
@@ -92,6 +86,7 @@ button, .avatar-option, .avatar-edit-icon, input {
     text-align: left;
 }
 
+/* BOTONES 3D */
 .btn-game-3d {
     position: relative;
     border: none;
@@ -106,7 +101,7 @@ button, .avatar-option, .avatar-edit-icon, input {
     justify-content: center;
     gap: 10px;
     color: white;
-    text-shadow: 0 2px 0 rgba(0,0,0,0.3);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 .btn-game-3d:active {
     transform: translateY(4px);
@@ -114,36 +109,28 @@ button, .avatar-option, .avatar-edit-icon, input {
 
 .btn-dark-primary {
     background: linear-gradient(to bottom, #4c1d95, #3b0764);
-    box-shadow: 0 6px 0 #2e1065, 0 10px 10px rgba(0,0,0,0.4);
+    box-shadow: 0 6px 0 #2e1065, 0 10px 10px rgba(0,0,0,0.3);
     border: 1px solid rgba(255,255,255,0.1);
 }
 .btn-dark-primary:active {
-    box-shadow: 0 2px 0 #2e1065, 0 4px 4px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 0 #2e1065, 0 4px 4px rgba(0,0,0,0.3);
 }
 
 .btn-dark-secondary {
     background: linear-gradient(to bottom, #334155, #1e293b);
-    box-shadow: 0 6px 0 #0f172a, 0 10px 10px rgba(0,0,0,0.4);
+    box-shadow: 0 6px 0 #0f172a, 0 10px 10px rgba(0,0,0,0.3);
     border: 1px solid rgba(255,255,255,0.05);
 }
 .btn-dark-secondary:active {
-    box-shadow: 0 2px 0 #0f172a, 0 4px 4px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 0 #0f172a, 0 4px 4px rgba(0,0,0,0.3);
 }
 
+/* PANELES Y TARJETAS */
 .glass-panel {
-    background: rgba(15, 23, 42, 0.95); /* Menos transparencia para evitar blur costoso */
+    background: rgba(15, 23, 42, 0.95); /* Opacidad alta en lugar de blur */
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05); 
     border-radius: 24px;
     transform: translateZ(0);
-}
-
-/* Solo aplicamos backdrop-filter si el dispositivo es potente (opcional, aquí lo dejo sutil) */
-@supports (backdrop-filter: blur(1px)) {
-    .glass-panel {
-        background: rgba(15, 23, 42, 0.8);
-        backdrop-filter: blur(8px); /* Blur reducido */
-        -webkit-backdrop-filter: blur(8px);
-    }
 }
 
 .player-card {
@@ -153,7 +140,6 @@ button, .avatar-option, .avatar-edit-icon, input {
     transform: translateZ(0);
     will-change: transform;
     border-radius: 16px;
-    /* Optimización de texto */
     -webkit-font-smoothing: subpixel-antialiased;
 }
 .player-card:hover {
@@ -163,25 +149,55 @@ button, .avatar-option, .avatar-edit-icon, input {
 }
 
 /* Animaciones 3D */
-#card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; }
+#card-inner { 
+    position: relative; 
+    width: 100%; 
+    height: 100%; 
+    transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    transform-style: preserve-3d; 
+}
 .perspective-1000 { perspective: 1000px; }
 .is-flipped { transform: rotateY(180deg); }
-.card-face { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 2rem; overflow: hidden; background-color: #0f172a; border: 1px solid rgba(255,255,255,0.05); }
-.card-front { background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.card-back { transform: rotateY(180deg); display: flex; flex-direction: column; align-items: center; justify-content: center; background: #020617; }
 
+.card-face { 
+    position: absolute; 
+    width: 100%; 
+    height: 100%; 
+    -webkit-backface-visibility: hidden; 
+    backface-visibility: hidden; 
+    border-radius: 2rem; 
+    overflow: hidden; 
+    background-color: #0f172a; 
+    border: 1px solid rgba(255,255,255,0.05); 
+}
+.card-front { 
+    background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+}
+.card-back { 
+    transform: rotateY(180deg); 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    background: #020617; 
+}
+
+/* Scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
 
-/* Animación de entrada estándar */
+/* Animaciones */
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 .animate-enter { animation: fadeInUp 0.3s ease-out forwards; }
 
-/* NUEVA ANIMACIÓN "POP" ULTRARÁPIDA PARA MODALES */
 @keyframes popIn {
     0% { opacity: 0; transform: scale(0.95); }
     100% { opacity: 1; transform: scale(1); }
 }
 .modal-enter {
-    animation: popIn 0.1s ease-out forwards; /* 0.1s es instantáneo */
+    animation: popIn 0.1s ease-out forwards;
 }
