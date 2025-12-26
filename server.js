@@ -25,13 +25,15 @@ const avatarColors = [
     'bg-pink-500', 'bg-rose-500'
 ];
 
+// Generador: 4 Números + 1 Letra
 function generateRoomCode() {
-    let result = '';
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let numbers = '';
     for (let i = 0; i < 4; i++) {
-        result += characters.charAt(Math.floor(Math.random() * characters.length));
+        numbers += Math.floor(Math.random() * 10).toString();
     }
-    return result;
+    const letters = 'QWERYPVCXZSAFGHJK';
+    const randomLetter = letters.charAt(Math.floor(Math.random() * letters.length));
+    return numbers + randomLetter;
 }
 
 function getRandomColor() {
@@ -53,11 +55,18 @@ function finalizePlayerRemoval(socketId, roomCode) {
             delete rooms[roomCode];
             console.log(`Sala ${roomCode} cerrada definitivamente.`);
         } else {
-            // Si el juego estaba en curso y se va alguien, podría romperse la lógica, 
-            // pero para simplificar, dejamos que siga o que el host reinicie.
             console.log(`Jugador ${removedPlayer.username} salió.`);
         }
     }
+}
+
+// Función auxiliar para normalizar texto (quitar tildes)
+function normalizeText(text) {
+    return text
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Elimina diacríticos (tildes, diéresis)
+        .trim();
 }
 
 io.on('connection', (socket) => {
@@ -77,7 +86,7 @@ io.on('connection', (socket) => {
                 sessionToken: sessionToken,
                 isReady: true 
             }],
-            gameState: 'lobby', // lobby, playing, voting, last_chance
+            gameState: 'lobby',
             settings: { impostorCount: 1, useHint: false },
             currentWord: '',
             currentCategory: '',
@@ -95,7 +104,9 @@ io.on('connection', (socket) => {
 
     // --- UNIRSE A SALA ---
     socket.on('joinRoom', ({ username, roomCode, sessionToken }) => {
-        const room = rooms[roomCode.toUpperCase()];
+        const code = roomCode.toUpperCase();
+        const room = rooms[code];
+        
         if (room && room.gameState === 'lobby') {
             const isOriginalHost = room.creatorToken === sessionToken;
             room.players.push({ 
@@ -107,15 +118,15 @@ io.on('connection', (socket) => {
                 sessionToken: sessionToken,
                 isReady: true 
             });
-            socket.join(roomCode.toUpperCase());
-            socket.emit('roomJoined', { roomCode: roomCode.toUpperCase() });
-            io.to(roomCode.toUpperCase()).emit('updatePlayerList', room.players);
+            socket.join(code);
+            socket.emit('roomJoined', { roomCode: code });
+            io.to(code).emit('updatePlayerList', room.players);
         } else {
             socket.emit('error', 'Sala no encontrada o juego ya iniciado.');
         }
     });
 
-    // --- RECONEXIÓN (BUG FIX) ---
+    // --- RECONEXIÓN ---
     socket.on('attemptReconnect', ({ roomCode, sessionToken }) => {
         const room = rooms[roomCode];
         if (!room) {
@@ -129,34 +140,28 @@ io.on('connection', (socket) => {
             const player = room.players[playerIndex];
             const oldSocketId = player.id;
 
-            // Cancelar borrado pendiente si existe
             if (pendingDisconnects[oldSocketId]) {
                 clearTimeout(pendingDisconnects[oldSocketId].timeout);
                 delete pendingDisconnects[oldSocketId];
             }
 
-            // Actualizar ID de socket
             player.id = socket.id;
             socket.join(roomCode);
 
-            // Actualizar referencias internas de IDs (Impostores, Votos, Pillados)
             if (room.impostorIds.includes(oldSocketId)) {
                 room.impostorIds = room.impostorIds.map(id => id === oldSocketId ? socket.id : id);
             }
             if (room.caughtImpostorId === oldSocketId) {
                 room.caughtImpostorId = socket.id;
             }
-            // Si ya había votado con el socket viejo, migrar el voto al socket nuevo
             if (room.votes[oldSocketId]) {
                 room.votes[socket.id] = room.votes[oldSocketId];
                 delete room.votes[oldSocketId];
             }
 
-            // Preparar datos del juego para reenviar
             let gameData = null;
             const isImpostor = room.impostorIds.includes(player.id);
             
-            // Enviamos datos de rol si estamos jugando O votando
             if (room.gameState === 'playing' || room.gameState === 'voting') {
                 const showHint = isImpostor && room.settings.useHint;
                 gameData = {
@@ -174,13 +179,12 @@ io.on('connection', (socket) => {
                 players: room.players,
                 gameState: room.gameState,
                 gameData,
-                hasVoted: hasVoted,      // Flag importante para el cliente
+                hasVoted: hasVoted,
                 lastGameResults: room.lastGameResults,
                 isReady: player.isReady,
                 caughtImpostorId: room.caughtImpostorId
             });
 
-            // Si estamos en votación, actualizamos contadores para el reconectado
             if (room.gameState === 'voting') {
                  socket.emit('voteUpdate', { 
                     votesCount: Object.keys(room.votes).length, 
@@ -188,7 +192,6 @@ io.on('connection', (socket) => {
                 });
             }
 
-            // Si estamos en last_chance, actualizar vista
             if (room.gameState === 'last_chance') {
                 const caughtPlayer = room.players.find(p => p.id === room.caughtImpostorId);
                 socket.emit('startLastChance', {
@@ -231,22 +234,19 @@ io.on('connection', (socket) => {
         if (validImpostors >= room.players.length) validImpostors = 1;
         room.settings.impostorCount = validImpostors;
         
-        // Reset de variables de juego
         room.votes = {};
         room.impostorGuess = null;
         room.caughtImpostorId = null;
         room.lastGameResults = null;
-        room.gameState = 'playing'; // ESTADO: JUGANDO
+        room.gameState = 'playing'; 
 
         room.players.forEach(p => p.isReady = false);
 
-        // Selección de palabra
         const randomCat = wordsData[Math.floor(Math.random() * wordsData.length)];
         const randomWord = randomCat.words[Math.floor(Math.random() * randomCat.words.length)];
         room.currentCategory = randomCat.category;
         room.currentWord = randomWord;
 
-        // Selección de impostores
         const playerIds = room.players.map(p => p.id);
         const impostors = [];
         while (impostors.length < room.settings.impostorCount && impostors.length < playerIds.length) {
@@ -256,7 +256,6 @@ io.on('connection', (socket) => {
         }
         room.impostorIds = impostors;
 
-        // Enviar roles
         room.players.forEach(player => {
             const isImpostor = impostors.includes(player.id);
             const showHint = isImpostor && room.settings.useHint;
@@ -281,17 +280,14 @@ io.on('connection', (socket) => {
         const room = rooms[roomCode];
         if (!room) return;
 
-        // Si llega el primer voto, cambiamos estado global a VOTING
         if (room.gameState === 'playing') {
             room.gameState = 'voting';
         }
 
-        // Evitar doble voto
         if (room.votes[socket.id]) return;
 
         room.votes[socket.id] = votedId;
         
-        // Comprobar si todos han votado
         if (Object.keys(room.votes).length === room.players.length) {
             processVotingResults(roomCode);
         } else {
@@ -307,12 +303,15 @@ io.on('connection', (socket) => {
         const room = rooms[roomCode];
         if (!room || room.gameState !== 'last_chance') return;
         
-        // Solo el impostor atrapado puede enviar esto
         if (socket.id !== room.caughtImpostorId) return;
 
         room.impostorGuess = word;
         
-        const isCorrect = word.toLowerCase().trim() === room.currentWord.toLowerCase().trim();
+        // MODIFICACIÓN: Comparación sin tildes ni mayúsculas
+        const cleanGuess = normalizeText(word);
+        const cleanTarget = normalizeText(room.currentWord);
+
+        const isCorrect = cleanGuess === cleanTarget;
         
         let winner = 'civilians';
         let message = 'El impostor falló. ¡Victoria Civil!';
@@ -343,7 +342,7 @@ io.on('connection', (socket) => {
 
         const requester = room.players.find(p => p.id === socket.id);
         if (!requester || !requester.isHost) return;
-        if (requester.id === playerId) return; // No auto-kick
+        if (requester.id === playerId) return; 
 
         const targetIndex = room.players.findIndex(p => p.id === playerId);
         if (targetIndex !== -1) {
@@ -384,7 +383,6 @@ io.on('connection', (socket) => {
         }
 
         if (foundRoomCode) {
-            // Dar 15 segundos para reconectar
             const timeout = setTimeout(() => {
                 finalizePlayerRemoval(socket.id, foundRoomCode);
                 delete pendingDisconnects[socket.id];
@@ -399,7 +397,6 @@ function processVotingResults(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
     
-    // Contar votos
     const voteCounts = {};
     Object.values(room.votes).forEach(votedId => { voteCounts[votedId] = (voteCounts[votedId] || 0) + 1; });
 
@@ -410,17 +407,13 @@ function processVotingResults(roomCode) {
         if (count > maxVotes) { maxVotes = count; mostVotedId = id; }
     }
 
-    // Lógica simple de empate: gana el primero encontrado (se puede mejorar)
-    
     const isImpostor = room.impostorIds.includes(mostVotedId);
 
     if (isImpostor) {
-        // CASO 1: Han pillado al impostor. -> Fase "Last Chance"
         room.gameState = 'last_chance';
         room.caughtImpostorId = mostVotedId;
         const caughtPlayer = room.players.find(p => p.id === mostVotedId);
 
-        // Notificar inicio Last Chance
         room.players.forEach(p => {
             io.to(p.id).emit('startLastChance', {
                 impostorName: caughtPlayer ? caughtPlayer.username : 'Desconocido',
@@ -429,7 +422,6 @@ function processVotingResults(roomCode) {
         });
 
     } else {
-        // CASO 2: Han echado a un civil -> Gana Impostor inmediatamente
         finalizeGame(roomCode, 'impostor', '¡Los civiles expulsaron a un inocente!');
     }
 }

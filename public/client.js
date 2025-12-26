@@ -90,6 +90,26 @@ document.getElementById('btn-imp-plus').addEventListener('click', () => {
     }
 });
 
+// --- MODIFICACIÓN: Validación de Input de Sala (Solo 4 números + 1 letra) ---
+document.getElementById('room-code-input').addEventListener('input', function(e) {
+    let value = e.target.value.toUpperCase();
+
+    // 1. Extraer solo los números iniciales (máximo 4)
+    let numbers = value.replace(/[^0-9]/g, '').substring(0, 4);
+
+    // 2. Extraer la letra final (solo si ya hay 4 números)
+    let letter = '';
+    if (numbers.length === 4) {
+        // Tomamos lo que queda después de los números
+        const rest = value.substring(4);
+        // Buscamos la primera letra que aparezca
+        letter = rest.replace(/[^A-Z]/g, '').substring(0, 1);
+    }
+
+    // Actualizamos el valor del input
+    e.target.value = numbers + letter;
+});
+
 // --- LÓGICA DE SOCKETS Y BOTONES ---
 
 document.getElementById('btn-create').addEventListener('click', () => {
@@ -103,6 +123,9 @@ document.getElementById('btn-join').addEventListener('click', () => {
     const username = document.getElementById('username').value;
     const roomCode = document.getElementById('room-code-input').value;
     if (!username || !roomCode) return showNotification('Faltan datos');
+    // Validación extra antes de enviar
+    if (roomCode.length !== 5) return showNotification('Código incompleto');
+    
     myUsername = username;
     socket.emit('joinRoom', { username, roomCode, sessionToken });
 });
@@ -166,9 +189,6 @@ socket.on('reconnectSuccess', (data) => {
         handleGameStarted(data.gameData);
     } 
     else if (data.gameState === 'voting') {
-        // --- RECUPERAR ESTADO DE VOTACIÓN ---
-        
-        // 1. Restaurar visualmente el rol en la carta (aunque esté oculta)
         if (data.gameData) {
             const secretWordEl = document.getElementById('secret-word');
             const roleTitle = document.getElementById('role-title');
@@ -180,12 +200,9 @@ socket.on('reconnectSuccess', (data) => {
                 secretWordEl.innerText = data.gameData.word;
             }
         }
-
-        // 2. Mostrar pantalla de votación directamente
         showScreen('voting');
         generateVotingButtons();
 
-        // 3. Si ya votó, bloquear la UI
         if (data.hasVoted) {
             const container = document.getElementById('voting-list');
             Array.from(container.children).forEach(b => {
@@ -198,7 +215,6 @@ socket.on('reconnectSuccess', (data) => {
 
     } 
     else if (data.gameState === 'last_chance') {
-        // --- RECUPERAR ESTADO LAST CHANCE ---
         const caughtPlayer = data.players.find(p => p.id === data.caughtImpostorId);
         showScreen('lastChance');
         
