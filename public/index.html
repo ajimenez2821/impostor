@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Impostor Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <section id="pantalla-inicio" class="pantalla activa">
+        
+        <h1 class="logo-stopots">IMPOSTOR<span class="punto">.</span>io</h1>
+
+        <div class="card-principal">
+            <div class="avatar-section">
+                <div class="avatar-circle">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Avatar" id="mi-avatar">
+                </div>
+                <p class="edit-text">Tu personaje</p>
+            </div>
+
+            <div class="input-wrapper">
+                <label>NICKNAME</label>
+                <input type="text" id="nombre-jugador" placeholder="Escribe tu nombre..." maxlength="12">
+            </div>
+
+            <div class="acciones-row">
+                <button class="btn-3d btn-verde" onclick="crearSala()">
+                    <span>CREAR SALA</span>
+                </button>
+                
+                <div class="o-text">O</div>
+
+                <div class="unirse-wrapper">
+                    <input type="text" id="codigo-input" placeholder="CÓDIGO" maxlength="5">
+                    <button class="btn-3d btn-azul" onclick="unirseSala()">
+                        <span>ENTRAR</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="pantalla-lobby" class="pantalla">
+        <div class="card-principal lobby-card">
+            <div class="top-bar">
+                <div class="codigo-tag">SALA: <b id="display-codigo">----</b></div>
+                <button class="btn-mini-rojo" onclick="location.reload()">X</button>
+            </div>
+
+            <h3>Jugadores</h3>
+            <div id="lista-jugadores" class="grid-jugadores">
+                </div>
+
+            <div id="controles-host" class="panel-config oculto">
+                <div class="config-item">
+                    <span>👻 Impostores</span>
+                    <div class="stepper">
+                        <button onclick="cambiarImpostores(-1)">-</button>
+                        <span id="val-impostores">1</span>
+                        <button onclick="cambiarImpostores(1)">+</button>
+                    </div>
+                </div>
+                
+                <div class="config-item">
+                    <span>🔍 Pistas</span>
+                    <label class="switch">
+                        <input type="checkbox" id="check-pistas" checked onchange="enviarConfig()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <button class="btn-3d btn-amarillo" onclick="empezarJuego()">
+                    <span>¡JUGAR!</span>
+                </button>
+            </div>
+
+            <div id="mensaje-espera" class="oculto">
+                <p class="blink">Esperando al líder...</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="pantalla-juego" class="pantalla">
+        <h1 class="logo-stopots small">TU ROL</h1>
+        
+        <div class="carta-juego" onclick="revelarCarta()">
+            <div class="carta-inner">
+                <div class="carta-front" id="tapa">
+                    <div class="icono-interrogacion">?</div>
+                    <p>TOCA PARA VER</p>
+                </div>
+                
+                <div class="carta-back">
+                    <h2 id="rol-titulo">ROL</h2>
+                    <p id="rol-desc">Descripción</p>
+                    <button class="btn-mini-rojo" onclick="ocultarCarta(event)">Ocultar</button>
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn-text" onclick="location.reload()">Salir de la partida</button>
+    </section>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+    
+    <script>
+        document.getElementById('nombre-jugador').addEventListener('input', function(e) {
+            const seed = e.target.value || 'Felix';
+            document.getElementById('mi-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
+        });
+    </script>
+</body>
+</html>

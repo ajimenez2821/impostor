@@ -1,0 +1,194 @@
+:root {
+    --bg-color: #FFD700; /* Amarillo StopotS */
+    --card-bg: #FFFFFF;
+    --texto: #333333;
+    --verde: #2ECC71;
+    --verde-dark: #27AE60;
+    --azul: #3498DB;
+    --azul-dark: #2980B9;
+    --amarillo-btn: #F1C40F;
+    --amarillo-dark: #F39C12;
+    --rojo: #E74C3C;
+}
+
+body {
+    margin: 0;
+    font-family: 'Fredoka', sans-serif; /* Fuente redondeada */
+    background-color: var(--bg-color);
+    /* Patrón de puntos para darle textura */
+    background-image: radial-gradient(#F39C12 15%, transparent 16%), radial-gradient(#F39C12 15%, transparent 16%);
+    background-size: 20px 20px;
+    background-position: 0 0, 10px 10px;
+    color: var(--texto);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.pantalla {
+    display: none;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.pantalla.activa { display: flex; }
+
+/* LOGO */
+.logo-stopots {
+    font-size: 3rem;
+    color: #fff;
+    text-shadow: 4px 4px 0px #000;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+.logo-stopots.small { font-size: 2rem; margin-bottom: 10px; }
+.punto { color: var(--rojo); }
+
+/* TARJETA PRINCIPAL (La caja blanca) */
+.card-principal {
+    background: var(--card-bg);
+    width: 90%;
+    max-width: 400px;
+    border-radius: 20px;
+    padding: 30px 20px;
+    box-shadow: 0 10px 0px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+/* AVATAR */
+.avatar-section { text-align: center; }
+.avatar-circle {
+    width: 100px; height: 100px;
+    background: #eee;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin: 0 auto;
+}
+.avatar-circle img { width: 100%; height: 100%; }
+.edit-text { font-size: 12px; color: #888; margin-top: 5px; }
+
+/* INPUTS */
+.input-wrapper { width: 100%; text-align: left; }
+.input-wrapper label {
+    font-size: 12px; font-weight: bold; color: #999; margin-left: 10px;
+}
+input {
+    width: 100%;
+    padding: 15px;
+    border-radius: 12px;
+    border: 2px solid #eee;
+    background: #f9f9f9;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 18px;
+    box-sizing: border-box;
+    transition: 0.2s;
+}
+input:focus { border-color: var(--azul); outline: none; background: #fff; }
+
+/* BOTONES 3D */
+.btn-3d {
+    border: none;
+    border-radius: 12px;
+    padding: 15px;
+    width: 100%;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    position: relative;
+    top: 0;
+    transition: top 0.1s;
+    margin-top: 10px;
+}
+
+.btn-3d:active { top: 4px; box-shadow: 0 0 0 !important; }
+
+.btn-verde {
+    background: var(--verde);
+    box-shadow: 0 5px 0 var(--verde-dark);
+}
+.btn-azul {
+    background: var(--azul);
+    box-shadow: 0 5px 0 var(--azul-dark);
+}
+.btn-amarillo {
+    background: var(--amarillo-btn);
+    box-shadow: 0 5px 0 var(--amarillo-dark);
+    color: #333;
+}
+
+/* GRUPO DE ACCIONES */
+.acciones-row { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.o-text { text-align: center; color: #ccc; font-weight: bold; margin: 5px 0; }
+
+.unirse-wrapper { display: flex; gap: 10px; }
+.unirse-wrapper input { width: 40%; text-align: center; text-transform: uppercase; }
+.unirse-wrapper button { width: 60%; margin-top: 0; height: 54px; } /* Ajuste altura */
+
+/* LOBBY STYLES */
+.top-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
+.codigo-tag { font-size: 1.2rem; color: #333; }
+.btn-mini-rojo { background: #ffcccc; color: red; border: none; padding: 5px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+.grid-jugadores { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; width: 100%; min-height: 50px; }
+.chip { background: #eee; padding: 8px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; color: #555; }
+
+.panel-config { background: #fdfdfd; width: 100%; border-radius: 12px; padding: 10px; box-sizing: border-box; border: 2px dashed #ddd; margin-top: 10px; }
+.config-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+
+/* CARTA DE JUEGO */
+.carta-juego {
+    width: 280px; height: 400px;
+    perspective: 1000px;
+    cursor: pointer;
+}
+.carta-inner {
+    position: relative; width: 100%; height: 100%;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+/* Efecto Flip o Slide */
+#tapa.revelada { opacity: 0; pointer-events: none; } /* Simple fade out para simplificar */
+
+.carta-front, .carta-back {
+    position: absolute; width: 100%; height: 100%;
+    backface-visibility: hidden;
+    border-radius: 20px;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+.carta-front {
+    background: linear-gradient(135deg, #3498DB, #2980B9);
+    color: white;
+    z-index: 2;
+    transition: opacity 0.3s;
+}
+
+.carta-back {
+    background: white;
+    color: #333;
+    z-index: 1;
+}
+
+#rol-titulo { font-size: 2.5rem; margin: 0; }
+#rol-desc { font-size: 1.2rem; color: #666; margin-top: 10px; }
+.icono-interrogacion { font-size: 80px; background: rgba(255,255,255,0.2); width: 120px; height: 120px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
+
+.blink { animation: parpadeo 1s infinite; color: #888; }
+@keyframes parpadeo { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+.btn-text { background: none; border: none; color: #666; text-decoration: underline; margin-top: 20px; cursor: pointer; }
+.oculto { display: none !important; }
