@@ -34,7 +34,6 @@ function App() {
 
         socket.on('updateLobby', (updatedPlayers) => {
             setPlayers(updatedPlayers);
-            // Update my own host status just in case (e.g. if host leaves and ownership transfers - not implemented yet but good practice)
             const myPlayer = updatedPlayers.find(p => p.id === socket.id);
             if (myPlayer) {
                 setMe(prev => ({ ...prev, isHost: myPlayer.isHost }));
@@ -47,7 +46,6 @@ function App() {
         });
 
         socket.on('gameStateChanged', (newState) => {
-            // newState: LOBBY, PLAYING, VOTING, RESULTS
             if (newState === 'LOBBY') setView('LOBBY');
             if (newState === 'PLAYING') setView('GAME');
             if (newState === 'VOTING') setView('VOTING');

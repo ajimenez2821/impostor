@@ -2,7 +2,26 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const path = require('path');
 const { categories } = require('./words');
+
+const app = express();
+app.use(cors());
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
+// State Management
+const rooms = new Map();
+
 // Helper: Generate 4-letter code
 function generateRoomCode() {
     let code = '';
@@ -110,12 +129,7 @@ io.on('connection', (socket) => {
 
         room.votes[socket.id] = votedPlayerId;
 
-        // Check if all players have voted
         if (Object.keys(room.votes).length === room.players.length) {
-            // If impostor hasn't guessed yet, wait (or handle parallel). 
-            // For simplicity, we can reveal results now if we assume impostor guess happens simultaneously or before.
-            // But per requirements: "El impostor debajo siempre tendra un cuadrado para escribir la palabra."
-            // Let's check if we have the impostor guess if needed.
             checkEndGame(roomCode);
         }
     });
@@ -124,7 +138,6 @@ io.on('connection', (socket) => {
         const room = rooms.get(roomCode);
         if (!room) return;
 
-        // Only impostor can submit
         if (socket.id !== room.impostorId) return;
 
         room.impostorGuess = guess;
@@ -193,7 +206,6 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
-        // Handle cleanup if needed, remove player from room
         rooms.forEach((room, code) => {
             const index = room.players.findIndex(p => p.id === socket.id);
             if (index !== -1) {
@@ -206,6 +218,11 @@ io.on('connection', (socket) => {
             }
         });
     });
+});
+
+// Handle React routing, return all requests to React app
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
