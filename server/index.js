@@ -3,21 +3,6 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const { categories } = require('./words');
-
-const app = express();
-app.use(cors());
-
-const server = http.createServer(app);
-const io = new Server(server, {
-    cors: {
-        origin: "*", // Allow all origins for simplicity in dev/render
-        methods: ["GET", "POST"]
-    }
-});
-
-// State Management
-const rooms = new Map();
-
 // Helper: Generate 4-letter code
 function generateRoomCode() {
     let code = '';
